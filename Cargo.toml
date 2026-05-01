@@ -1,7 +1,13 @@
 [package]
 name = "mdlux"
-version = "0.1.0"
+version = "0.0.2"
 edition = "2024"
+description = "Terminal-first Markdown renderer with ANSI and Kitty enhancements"
+license = "MIT"
+repository = "https://github.com/scixor/mdlux-rs"
+readme = "README.md"
+keywords = ["markdown", "terminal", "cli", "ansi", "kitty"]
+categories = ["command-line-utilities", "text-processing"]
 
 [dependencies]
 anyhow = "1"
