@@ -17,27 +17,6 @@ pub fn render_inlines_to_spans(inlines: &[Inline], ctx: &RenderContext) -> Vec<S
     merge_spans(out)
 }
 
-pub fn plain_text(inlines: &[Inline]) -> String {
-    let mut out = String::new();
-    for inline in inlines {
-        match inline {
-            Inline::Text(text) | Inline::Code(text) => out.push_str(text),
-            Inline::Emph(inner) | Inline::Strong(inner) | Inline::Strike(inner) => {
-                out.push_str(&plain_text(inner))
-            }
-            Inline::Link { text, .. } => out.push_str(&plain_text(text)),
-            Inline::Image { alt, .. } => out.push_str(alt),
-            Inline::FootnoteRef(name) => {
-                out.push_str("[^");
-                out.push_str(name);
-                out.push(']');
-            }
-            Inline::SoftBreak | Inline::HardBreak => out.push(' '),
-        }
-    }
-    out
-}
-
 fn push_inline(inline: &Inline, base: &Style, ctx: &RenderContext, out: &mut Vec<Span>) {
     match inline {
         Inline::Text(text) => out.push(Span {
@@ -77,7 +56,7 @@ fn push_inline(inline: &Inline, base: &Style, ctx: &RenderContext, out: &mut Vec
         }
         Inline::Link { text, dest, .. } => {
             if ctx.capabilities.kitty_hyperlinks {
-                let label = plain_text(text);
+                let label = Inline::plain_text(text);
                 out.push(Span {
                     text: osc8_link(&label, dest),
                     style: merge_style(base, &ctx.theme.link_label),

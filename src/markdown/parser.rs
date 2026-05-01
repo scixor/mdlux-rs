@@ -6,11 +6,10 @@ use pulldown_cmark::{
 use crate::markdown::ast::{Alignment, Block, Inline};
 
 pub fn parse_markdown(input: &str) -> Vec<Block> {
-    let mut options = Options::empty();
-    options.insert(Options::ENABLE_TABLES);
-    options.insert(Options::ENABLE_TASKLISTS);
-    options.insert(Options::ENABLE_STRIKETHROUGH);
-    options.insert(Options::ENABLE_FOOTNOTES);
+    let options = Options::ENABLE_TABLES
+        | Options::ENABLE_TASKLISTS
+        | Options::ENABLE_STRIKETHROUGH
+        | Options::ENABLE_FOOTNOTES;
 
     let parser = Parser::new_ext(input, options);
     let events = parser.collect::<Vec<_>>();
@@ -310,7 +309,7 @@ impl<'a> EventParser<'a> {
                 let title = to_opt(title);
                 self.idx += 1;
                 let text = self.parse_inlines_until(InlineEnd::Image);
-                let alt = flatten_inline_text(&text);
+                let alt = Inline::plain_text(&text);
                 out.push(Inline::Image { alt, path, title });
                 true
             }
@@ -411,27 +410,6 @@ fn to_opt(input: &CowStr<'_>) -> Option<String> {
     } else {
         Some(input.to_string())
     }
-}
-
-fn flatten_inline_text(inlines: &[Inline]) -> String {
-    let mut out = String::new();
-    for inline in inlines {
-        match inline {
-            Inline::Text(s) | Inline::Code(s) => out.push_str(s),
-            Inline::Emph(inner) | Inline::Strong(inner) | Inline::Strike(inner) => {
-                out.push_str(&flatten_inline_text(inner))
-            }
-            Inline::Link { text, .. } => out.push_str(&flatten_inline_text(text)),
-            Inline::Image { alt, .. } => out.push_str(alt),
-            Inline::FootnoteRef(name) => {
-                out.push_str("[^");
-                out.push_str(name);
-                out.push(']');
-            }
-            Inline::SoftBreak | Inline::HardBreak => out.push(' '),
-        }
-    }
-    out
 }
 
 fn image_only_paragraph(inlines: &[Inline]) -> Option<Block> {

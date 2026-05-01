@@ -23,6 +23,11 @@ fn chunk_bytes(input: &[u8], max_chunk_size: usize) -> Vec<&[u8]> {
     out
 }
 
+// Kitty graphics protocol: https://sw.kovidgoyal.net/kitty/graphics-protocol/
+// APC format: ESC _ G <key=val,...> ; <base64-payload> ESC \
+// a=T transmit+display, t=d direct data, f=100 PNG format.
+// Large images split into chunks; m=1 means more chunks follow, m=0 is last.
+// c/r set max display width/height in cells (r=0 means unconstrained height).
 pub fn render_image(path: &Path, opts: KittyImageOptions) -> Result<String> {
     let dyn_image =
         image::open(path).with_context(|| format!("failed to open image: {}", path.display()))?;

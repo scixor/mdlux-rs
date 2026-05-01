@@ -4,11 +4,11 @@ use anyhow::Result;
 
 use crate::kitty::graphics::{KittyImageOptions, render_image};
 use crate::kitty::text_size::{TextSize, sized_text};
-use crate::markdown::ast::Block;
+use crate::markdown::ast::{Block, Inline};
 use crate::render::RenderContext;
 
 use super::ansi::apply_style;
-use super::inline::{plain_text, render_inlines_to_spans};
+use super::inline::render_inlines_to_spans;
 use super::table::{RenderedTable, render_table};
 use super::wrap::wrap_spans;
 
@@ -74,10 +74,10 @@ pub fn render_block(
             aligns,
         } => {
             let rendered = RenderedTable {
-                headers: headers.iter().map(|h| plain_text(h)).collect(),
+                headers: headers.iter().map(|h| Inline::plain_text(h)).collect(),
                 rows: rows
                     .iter()
-                    .map(|r| r.iter().map(|c| plain_text(c)).collect::<Vec<_>>())
+                    .map(|r| r.iter().map(|c| Inline::plain_text(c)).collect::<Vec<_>>())
                     .collect(),
                 aligns: aligns.clone(),
             };
@@ -111,35 +111,30 @@ pub fn render_block(
     Ok(())
 }
 
-fn render_heading(
-    level: u8,
-    inlines: &[crate::markdown::ast::Inline],
-    ctx: &RenderContext,
-    out: &mut String,
-) -> usize {
-    let raw = plain_text(inlines).trim().to_string();
+fn render_heading(level: u8, inlines: &[Inline], ctx: &RenderContext, out: &mut String) -> usize {
+    let raw = Inline::plain_text(inlines).trim().to_string();
+    let ansi = ctx.capabilities.ansi;
 
     if ctx.capabilities.kitty_text_size {
-        let sized = match level {
-            1 => sized_text(&raw, TextSize::Scale(3)),
-            2 => sized_text(&raw, TextSize::Scale(2)),
-            _ => apply_style(&raw, ctx.theme.heading4, ctx.capabilities.ansi),
+        // s=3 gives 3-row block (H1), s=2 gives 2-row block (H2); H3+ fall back to ANSI.
+        // ANSI codes must not be nested inside OSC 66 text payload.
+        let (text, trailing) = match level {
+            1 => (sized_text(&raw, TextSize::Scale(3)), 4),
+            2 => (sized_text(&raw, TextSize::Scale(2)), 3),
+            3 => (apply_style(&raw, ctx.theme.heading3, ansi), 2),
+            _ => (apply_style(&raw, ctx.theme.heading4, ansi), 2),
         };
-        out.push_str(&sized);
-        return match level {
-            1 => 4,
-            2 => 3,
-            _ => 2,
-        };
+        out.push_str(&text);
+        return trailing;
     }
 
-    let styled = match level {
-        1 => apply_style(&raw, ctx.theme.heading1, ctx.capabilities.ansi),
-        2 => apply_style(&raw, ctx.theme.heading2, ctx.capabilities.ansi),
-        3 => apply_style(&raw, ctx.theme.heading3, ctx.capabilities.ansi),
-        _ => apply_style(&raw, ctx.theme.heading4, ctx.capabilities.ansi),
+    let style = match level {
+        1 => ctx.theme.heading1,
+        2 => ctx.theme.heading2,
+        3 => ctx.theme.heading3,
+        _ => ctx.theme.heading4,
     };
-    out.push_str(&styled);
+    out.push_str(&apply_style(&raw, style, ansi));
     2
 }
 
@@ -151,14 +146,11 @@ fn render_code_block(
     out: &mut String,
 ) {
     debug_assert!(ctx.width >= 1, "width must be positive");
-    let mut rendered = if let Some(highlighter) = &state.highlighter {
-        highlighter.highlight_code(code, lang)
-    } else {
-        code.to_string()
+    let rendered = match (&state.highlighter, ctx.capabilities.ansi) {
+        (Some(highlighter), true) => highlighter.highlight_code(code, lang),
+        _ => code.to_string(),
     };
-    if !ctx.capabilities.ansi {
-        rendered = code.to_string();
-    }
+
     let label = lang.unwrap_or("code");
     let top = format!("+-- {label} --");
     let bottom = "+--";
@@ -169,19 +161,15 @@ fn render_code_block(
     ));
     out.push('\n');
 
-    let mut line_count = 0usize;
-    for line in rendered.lines() {
-        line_count += 1;
+    let lines = rendered.lines();
+    let once = std::iter::once("").take(rendered.is_empty() as usize);
+    for line in lines.chain(once) {
         let pipe = apply_style("| ", ctx.theme.table_border, ctx.capabilities.ansi);
         out.push_str(&pipe);
         out.push_str(line);
         out.push('\n');
     }
-    if line_count == 0 {
-        let pipe = apply_style("| ", ctx.theme.table_border, ctx.capabilities.ansi);
-        out.push_str(&pipe);
-        out.push('\n');
-    }
+
     out.push_str(&apply_style(
         bottom,
         ctx.theme.table_border,

@@ -35,7 +35,7 @@ static ANSI: Theme = Theme {
     name: "ansi",
     heading1: s(Some(Color::Ansi(33)), true, false, true, false),
     heading2: s(Some(Color::Ansi(39)), true, false, false, false),
-    heading3: s(Some(Color::Ansi(45)), true, false, false, false),
+    heading3: s(Some(Color::Ansi(45)), true, false, true, false),
     heading4: s(Some(Color::Ansi(37)), true, false, false, true),
     text: s(None, false, false, false, false),
     emphasis: s(None, false, true, false, false),
@@ -56,7 +56,7 @@ static DARK: Theme = Theme {
     name: "dark",
     heading1: s(Some(Color::Rgb(224, 108, 117)), true, false, true, false),
     heading2: s(Some(Color::Rgb(97, 175, 239)), true, false, false, false),
-    heading3: s(Some(Color::Rgb(198, 120, 221)), true, false, false, false),
+    heading3: s(Some(Color::Rgb(198, 120, 221)), true, false, true, false),
     heading4: s(Some(Color::Rgb(171, 178, 191)), true, false, false, true),
     text: s(Some(Color::Rgb(171, 178, 191)), false, false, false, false),
     emphasis: s(None, false, true, false, false),
@@ -77,7 +77,7 @@ static LIGHT: Theme = Theme {
     name: "light",
     heading1: s(Some(Color::Rgb(196, 26, 22)), true, false, true, false),
     heading2: s(Some(Color::Rgb(0, 64, 175)), true, false, false, false),
-    heading3: s(Some(Color::Rgb(111, 66, 193)), true, false, false, false),
+    heading3: s(Some(Color::Rgb(111, 66, 193)), true, false, true, false),
     heading4: s(Some(Color::Rgb(60, 60, 60)), true, false, false, true),
     text: s(Some(Color::Rgb(30, 30, 30)), false, false, false, false),
     emphasis: s(None, false, true, false, false),
@@ -98,7 +98,7 @@ static NORD: Theme = Theme {
     name: "nord",
     heading1: s(Some(Color::Rgb(191, 97, 106)), true, false, true, false),
     heading2: s(Some(Color::Rgb(129, 161, 193)), true, false, false, false),
-    heading3: s(Some(Color::Rgb(180, 142, 173)), true, false, false, false),
+    heading3: s(Some(Color::Rgb(180, 142, 173)), true, false, true, false),
     heading4: s(Some(Color::Rgb(216, 222, 233)), true, false, false, true),
     text: s(Some(Color::Rgb(216, 222, 233)), false, false, false, false),
     emphasis: s(None, false, true, false, false),
@@ -119,7 +119,7 @@ static GRUVBOX: Theme = Theme {
     name: "gruvbox",
     heading1: s(Some(Color::Rgb(251, 73, 52)), true, false, true, false),
     heading2: s(Some(Color::Rgb(131, 165, 152)), true, false, false, false),
-    heading3: s(Some(Color::Rgb(211, 134, 155)), true, false, false, false),
+    heading3: s(Some(Color::Rgb(211, 134, 155)), true, false, true, false),
     heading4: s(Some(Color::Rgb(235, 219, 178)), true, false, false, true),
     text: s(Some(Color::Rgb(235, 219, 178)), false, false, false, false),
     emphasis: s(None, false, true, false, false),
@@ -140,7 +140,7 @@ static KANAGAWA: Theme = Theme {
     name: "kanagawa",
     heading1: s(Some(Color::Rgb(210, 126, 153)), true, false, true, false), // sakuraPink
     heading2: s(Some(Color::Rgb(126, 156, 216)), true, false, false, false), // crystalBlue
-    heading3: s(Some(Color::Rgb(152, 187, 108)), true, false, false, false), // springGreen
+    heading3: s(Some(Color::Rgb(152, 187, 108)), true, false, true, false), // springGreen
     heading4: s(Some(Color::Rgb(230, 195, 132)), true, false, false, true), // carpYellow
     text: s(Some(Color::Rgb(220, 215, 186)), false, false, false, false),   // fujiWhite
     emphasis: s(None, false, true, false, false),
