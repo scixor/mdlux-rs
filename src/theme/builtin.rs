@@ -5,7 +5,7 @@ pub fn default_theme_name() -> &'static str {
 }
 
 pub fn list_theme_names() -> &'static [&'static str] {
-    &["ansi", "dark", "light", "nord", "gruvbox"]
+    &["ansi", "dark", "light", "nord", "gruvbox", "kanagawa"]
 }
 
 pub fn find_theme(name: &str) -> Option<&'static Theme> {
@@ -15,6 +15,7 @@ pub fn find_theme(name: &str) -> Option<&'static Theme> {
         "light" => Some(&LIGHT),
         "nord" => Some(&NORD),
         "gruvbox" => Some(&GRUVBOX),
+        "kanagawa" => Some(&KANAGAWA),
         _ => None,
     }
 }
@@ -129,3 +130,34 @@ static GRUVBOX: Theme = Theme {
     table_border: s(Some(Color::Rgb(146, 131, 116)), false, false, false, false),
     list_marker: s(Some(Color::Rgb(131, 165, 152)), true, false, false, false),
 };
+
+static KANAGAWA: Theme = Theme {
+    name: "kanagawa",
+    heading1: s(Some(Color::Rgb(210, 126, 153)), true, false, true, false), // sakuraPink
+    heading2: s(Some(Color::Rgb(126, 156, 216)), true, false, false, false), // crystalBlue
+    heading3: s(Some(Color::Rgb(152, 187, 108)), true, false, false, false), // springGreen
+    heading4: s(Some(Color::Rgb(230, 195, 132)), true, false, false, true), // carpYellow
+    text: s(Some(Color::Rgb(220, 215, 186)), false, false, false, false),   // fujiWhite
+    emphasis: s(None, false, true, false, false),
+    strong: s(None, true, false, false, false),
+    inline_code: s(Some(Color::Rgb(127, 180, 202)), false, false, false, false), // springBlue
+    code: s(Some(Color::Rgb(220, 215, 186)), false, false, false, false),        // fujiWhite
+    quote_marker: s(Some(Color::Rgb(114, 124, 124)), false, false, false, false), // katanaGray
+    link_label: s(Some(Color::Rgb(106, 149, 137)), false, false, true, false),   // waveAqua1
+    link_url: s(Some(Color::Rgb(47, 73, 108)), false, true, false, false),       // waveBlue2
+    rule: s(Some(Color::Rgb(114, 124, 124)), false, false, false, false),        // katanaGray
+    table_header: s(Some(Color::Rgb(230, 195, 132)), true, false, false, false), // carpYellow
+    table_border: s(Some(Color::Rgb(84, 84, 109)), false, false, false, false),  // sumiInk4
+    list_marker: s(Some(Color::Rgb(210, 126, 153)), true, false, false, false),  // sakuraPink
+};
+
+#[cfg(test)]
+mod tests {
+    use super::{find_theme, list_theme_names};
+
+    #[test]
+    fn includes_kanagawa() {
+        assert!(list_theme_names().contains(&"kanagawa"));
+        assert!(find_theme("kanagawa").is_some());
+    }
+}

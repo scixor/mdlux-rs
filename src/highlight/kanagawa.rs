@@ -1,0 +1,235 @@
+use std::str::FromStr;
+use syntect::highlighting::{
+    Color, FontStyle, ScopeSelectors, StyleModifier, Theme, ThemeItem, ThemeSettings,
+};
+
+pub(super) fn theme() -> Theme {
+    Theme {
+        name: Some("Kanagawa Custom".to_string()),
+        author: Some("mdlux".to_string()),
+        settings: ThemeSettings {
+            foreground: Some(rgb(220, 215, 186)),
+            background: Some(rgb(31, 31, 40)),
+            caret: Some(rgb(156, 171, 202)),
+            line_highlight: Some(rgb(37, 37, 48)),
+            selection: Some(rgb(54, 54, 70)),
+            selection_foreground: Some(rgb(220, 215, 186)),
+            gutter_foreground: Some(rgb(84, 84, 109)),
+            ..ThemeSettings::default()
+        },
+        scopes: vec![
+            scope_style(
+                "source.shell, source.bash, source.zsh",
+                Some(rgb(220, 215, 186)),
+                None,
+                None,
+            ),
+            scope_style("comment", Some(rgb(113, 124, 124)), None, None),
+            scope_style(
+                "constant, constant.numeric",
+                Some(rgb(210, 126, 153)),
+                None,
+                None,
+            ),
+            scope_style(
+                "constant.character.escape",
+                Some(rgb(255, 160, 102)),
+                None,
+                None,
+            ),
+            scope_style("string", Some(rgb(118, 148, 106)), None, None),
+            scope_style("string.regexp", Some(rgb(127, 180, 202)), None, None),
+            scope_style(
+                "string.unquoted.shell",
+                Some(rgb(118, 148, 106)),
+                None,
+                None,
+            ),
+            scope_style(
+                "string.unquoted.argument.shell, string.quoted.single.shell, string.quoted.double.shell, string.interpolated.shell",
+                Some(rgb(220, 215, 186)),
+                None,
+                None,
+            ),
+            scope_style(
+                "string.interpolated.process-substitution.shell",
+                Some(rgb(127, 180, 202)),
+                None,
+                None,
+            ),
+            scope_style(
+                "variable.other.member, variable.object.property",
+                Some(rgb(106, 149, 137)),
+                None,
+                None,
+            ),
+            scope_style(
+                "variable.function, variable.function.shell",
+                Some(rgb(127, 180, 202)),
+                None,
+                Some(FontStyle::BOLD),
+            ),
+            scope_style("variable", Some(rgb(220, 215, 186)), None, None),
+            scope_style(
+                "variable.language, variable.other.readwrite.instance.rust",
+                Some(rgb(163, 212, 213)),
+                None,
+                None,
+            ),
+            scope_style(
+                "variable.other.readwrite.assignment.shell",
+                Some(rgb(228, 104, 118)),
+                None,
+                None,
+            ),
+            scope_style(
+                "variable.other.normal.shell, variable.other.word.shell, variable.other.assignment.shell, meta.parameter-expansion.shell",
+                Some(rgb(220, 215, 186)),
+                None,
+                None,
+            ),
+            scope_style(
+                "variable.parameter, variable.other.positional.shell, variable.other.special.shell",
+                Some(rgb(163, 212, 213)),
+                None,
+                None,
+            ),
+            scope_style("label", Some(rgb(163, 212, 213)), None, None),
+            scope_style("punctuation", Some(rgb(114, 113, 105)), None, None),
+            scope_style(
+                "punctuation.definition.variable.shell, punctuation.separator.continuation.line.shell, punctuation.section.embedded.begin.shell, punctuation.section.embedded.end.shell",
+                Some(rgb(114, 113, 105)),
+                None,
+                None,
+            ),
+            scope_style(
+                "keyword",
+                Some(rgb(149, 127, 184)),
+                None,
+                Some(FontStyle::ITALIC),
+            ),
+            scope_style("keyword.control", Some(rgb(228, 104, 118)), None, None),
+            scope_style(
+                "keyword.control.return, keyword.control.exception",
+                Some(rgb(255, 93, 98)),
+                None,
+                None,
+            ),
+            scope_style(
+                "storage.type.function.shell, storage.type.function.bash",
+                Some(rgb(228, 104, 118)),
+                None,
+                None,
+            ),
+            scope_style(
+                "keyword.operator.logical.shell, keyword.operator.pipe.shell, keyword.operator.redirection.shell, keyword.operator.assignment.shell",
+                Some(rgb(220, 165, 97)),
+                None,
+                None,
+            ),
+            scope_style(
+                "keyword.operator.redirect.shell, keyword.operator.redirect.stdout.shell, keyword.operator.redirect.stderr.shell",
+                Some(rgb(220, 165, 97)),
+                None,
+                None,
+            ),
+            scope_style("operator", Some(rgb(220, 165, 97)), None, None),
+            scope_style(
+                "entity.name.function, support.function",
+                Some(rgb(152, 187, 108)),
+                None,
+                None,
+            ),
+            scope_style(
+                "entity.name.command.shell, meta.statement.command.name.basic.shell, meta.statement.command.name.quoted.shell",
+                Some(rgb(152, 187, 108)),
+                None,
+                Some(FontStyle::BOLD),
+            ),
+            scope_style(
+                "meta.function-call.shell, meta.function-call.bash, entity.name.function.shell, entity.name.function.bash, support.function.builtin.shell, support.function.builtin.bash, support.function.builtin.zsh",
+                Some(rgb(152, 187, 108)),
+                None,
+                None,
+            ),
+            scope_style(
+                "support.function.builtin",
+                Some(rgb(127, 180, 202)),
+                None,
+                None,
+            ),
+            scope_style("support.constant", Some(rgb(127, 180, 202)), None, None),
+            scope_style("entity.name.tag", Some(rgb(230, 195, 132)), None, None),
+            scope_style(
+                "entity.name.namespace, support.namespace",
+                Some(rgb(122, 168, 159)),
+                None,
+                None,
+            ),
+            scope_style(
+                "entity.other.attribute-name",
+                Some(rgb(127, 180, 202)),
+                None,
+                None,
+            ),
+            scope_style("entity.name.type", Some(rgb(230, 195, 132)), None, None),
+            scope_style("support.type", Some(rgb(122, 168, 159)), None, None),
+            scope_style(
+                "meta.command.shell, meta.statement.shell, meta.scope.for-in.shell, meta.scope.case-block.shell, meta.scope.if-block.shell, meta.group.shell",
+                Some(rgb(220, 215, 186)),
+                None,
+                None,
+            ),
+            scope_style(
+                "markup.heading",
+                Some(rgb(210, 126, 153)),
+                None,
+                Some(FontStyle::BOLD),
+            ),
+            scope_style("markup.list", Some(rgb(210, 126, 153)), None, None),
+            scope_style("markup.bold", None, None, Some(FontStyle::BOLD)),
+            scope_style("markup.italic", None, None, Some(FontStyle::ITALIC)),
+            scope_style("markup.link", Some(rgb(106, 149, 137)), None, None),
+            scope_style("markup.quote", Some(rgb(114, 113, 105)), None, None),
+            scope_style(
+                "markup.inserted, meta.diff.header.from-file",
+                Some(rgb(118, 148, 106)),
+                Some(rgb(43, 51, 40)),
+                None,
+            ),
+            scope_style(
+                "markup.deleted, meta.diff.header.to-file",
+                Some(rgb(195, 64, 67)),
+                Some(rgb(67, 36, 43)),
+                None,
+            ),
+            scope_style(
+                "markup.changed",
+                Some(rgb(220, 165, 97)),
+                Some(rgb(73, 68, 60)),
+                None,
+            ),
+            scope_style("invalid", Some(rgb(255, 93, 98)), None, None),
+        ],
+    }
+}
+
+fn scope_style(
+    scope: &str,
+    foreground: Option<Color>,
+    background: Option<Color>,
+    font_style: Option<FontStyle>,
+) -> ThemeItem {
+    ThemeItem {
+        scope: ScopeSelectors::from_str(scope).expect("valid scope selector"),
+        style: StyleModifier {
+            foreground,
+            background,
+            font_style,
+        },
+    }
+}
+
+const fn rgb(r: u8, g: u8, b: u8) -> Color {
+    Color { r, g, b, a: 0xFF }
+}

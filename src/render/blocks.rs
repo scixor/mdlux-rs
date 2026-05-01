@@ -24,9 +24,10 @@ pub fn render_block(
 ) -> Result<()> {
     match block {
         Block::Heading { level, content } => {
-            render_heading(*level, content, ctx, out);
-            out.push('\n');
-            out.push('\n');
+            let trailing_newlines = render_heading(*level, content, ctx, out);
+            for _ in 0..trailing_newlines {
+                out.push('\n');
+            }
         }
         Block::Paragraph(inlines) => {
             let spans = render_inlines_to_spans(inlines, ctx);
@@ -114,7 +115,7 @@ fn render_heading(
     inlines: &[crate::markdown::ast::Inline],
     ctx: &RenderContext,
     out: &mut String,
-) {
+) -> usize {
     let raw = plain_text(inlines).trim().to_string();
 
     if ctx.capabilities.kitty_text_size {
@@ -124,7 +125,11 @@ fn render_heading(
             _ => apply_style(&raw, ctx.theme.heading4, ctx.capabilities.ansi),
         };
         out.push_str(&sized);
-        return;
+        return match level {
+            1 => 3,
+            2 => 2,
+            _ => 2,
+        };
     }
 
     let styled = match level {
@@ -134,6 +139,7 @@ fn render_heading(
         _ => apply_style(&raw, ctx.theme.heading4, ctx.capabilities.ansi),
     };
     out.push_str(&styled);
+    2
 }
 
 fn render_code_block(
@@ -369,5 +375,31 @@ mod tests {
         let out = render_document(&blocks, &ctx).expect("render should work");
         assert!(out.contains("\u{1b}[0m"));
         assert!(out.contains("\nafter\n"));
+    }
+
+    #[test]
+    fn kitty_h1_has_extra_spacing() {
+        let blocks = vec![
+            Block::Heading {
+                level: 1,
+                content: vec![Inline::Text("mdlux".to_string())],
+            },
+            Block::Paragraph(vec![Inline::Text("Terminal Markdown renderer".to_string())]),
+        ];
+        let ctx = RenderContext {
+            width: 80,
+            theme: find_theme("ansi").expect("theme exists").clone(),
+            capabilities: Capabilities {
+                ansi: false,
+                kitty_text_size: true,
+                kitty_graphics: false,
+                kitty_hyperlinks: false,
+            },
+            source_dir: PathBuf::from("."),
+            no_highlight: true,
+        };
+        let out = render_document(&blocks, &ctx).expect("render should work");
+        assert!(out.contains("\u{1b}]66;s=3;mdlux\u{7}\n\n\n"));
+        assert!(out.contains("Terminal Markdown renderer"));
     }
 }
