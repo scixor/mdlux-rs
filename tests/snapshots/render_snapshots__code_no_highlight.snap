@@ -1,0 +1,10 @@
+---
+source: tests/render_snapshots.rs
+assertion_line: 50
+expression: out
+---
+[38;5;244m+-- rust --[0m
+[38;5;244m| [0mfn main() {
+[38;5;244m| [0m    println!("hello");
+[38;5;244m| [0m}
+[38;5;244m+--[0m

@@ -1,0 +1,9 @@
+---
+source: tests/render_snapshots.rs
+assertion_line: 33
+expression: out
+---
+Title
+
+Simple paragraph with emphasis and strong text plus a link
+(https://example.com).

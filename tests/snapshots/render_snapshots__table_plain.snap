@@ -1,0 +1,11 @@
+---
+source: tests/render_snapshots.rs
+assertion_line: 51
+expression: out
+---
++------+-------+
+| Name | Count |
++------+-------+
+| Foo  |   123 |
+| Bar  |     9 |
++------+-------+

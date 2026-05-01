@@ -1,0 +1,6 @@
+---
+source: tests/render_snapshots.rs
+assertion_line: 57
+expression: out
+---
+[image: Architecture - assets/arch.png]

@@ -1,0 +1,9 @@
+---
+source: tests/render_snapshots.rs
+assertion_line: 39
+expression: out
+---
+[1;4;38;5;33mTitle[0m
+
+Simple paragraph with [3memphasis[0m and [1mstrong[0m text plus a [4;38;5;39mlink[0m
+[38;5;244m(https://example.com)[0m.
