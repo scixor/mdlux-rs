@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: x86_64-unknown-linux-musl
+
+      - name: Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Test
+        run: cargo test --all --locked
+
+      - name: Build static Linux artifact
+        run: cargo build --release --locked --target x86_64-unknown-linux-musl
+
+      - name: Verify static Linux binary
+        run: |
+          file target/x86_64-unknown-linux-musl/release/mdlux
+          file target/x86_64-unknown-linux-musl/release/mdlux | grep -qi "static"
