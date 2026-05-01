@@ -14,6 +14,27 @@ What it doesn't support atm:
 - callouts (i do plan to support this)
 - tons of other things which I don't use a lot
 
+## Install
+
+### Cargo (crates.io)
+
+```bash
+cargo install mdlux
+```
+
+### eget (GitHub releases)
+
+```bash
+# usually works directly by picking the matching release asset
+eget scixor/mdlux-rs
+
+# if needed, force the asset pattern explicitly
+# Linux (x86_64 musl):
+eget scixor/mdlux-rs --asset x86_64-unknown-linux-musl
+# macOS (Apple Silicon):
+eget scixor/mdlux-rs --asset aarch64-apple-darwin
+```
+
 ## Usage
 
 ```bash
@@ -22,7 +43,7 @@ cat README.md | mdlux
 # Override width as mdlux tries to fit widh by default
 mdlux --theme nord --width 100 doc.md
 # Turn off text re-sizing
-mdlux --text-size false --images auto README.md
+mdlux --text-size never --images auto README.md
 ```
 
 ## Flags
