@@ -21,7 +21,7 @@ pub fn detect_capabilities(cli: &Cli) -> Capabilities {
     let is_plain = cli.plain;
     let is_kitty = detect_kitty_env();
 
-    let kitty_text_size = resolve_mode(cli.kitty, is_plain, is_kitty);
+    let kitty_text_size = resolve_mode(cli.text_size, is_plain, is_kitty);
     let kitty_graphics = resolve_mode(cli.images, is_plain, is_kitty);
 
     Capabilities {

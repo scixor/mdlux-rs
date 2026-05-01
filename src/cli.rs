@@ -22,7 +22,7 @@ pub struct Cli {
     pub theme: String,
 
     #[arg(long, value_enum, default_value_t = FeatureMode::Auto)]
-    pub kitty: FeatureMode,
+    pub text_size: FeatureMode,
 
     #[arg(long, value_enum, default_value_t = FeatureMode::Auto)]
     pub images: FeatureMode,
