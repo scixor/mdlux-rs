@@ -482,6 +482,22 @@ mod tests {
     }
 
     #[test]
+    fn parses_four_tick_fence_with_inner_triple_ticks() {
+        let input = "````md\n```ts\nconst x: number = 1\n```\n````\n";
+        let blocks = parse_markdown(input);
+        assert_eq!(blocks.len(), 1);
+        match &blocks[0] {
+            Block::CodeBlock { lang, code } => {
+                assert_eq!(lang.as_deref(), Some("md"));
+                assert!(code.contains("```ts"));
+                assert!(code.contains("const x: number = 1"));
+                assert!(code.contains("```"));
+            }
+            _ => panic!("expected code block"),
+        }
+    }
+
+    #[test]
     fn parses_table() {
         let input = "| A | B |\n| - | -: |\n| x | 1 |\n";
         let blocks = parse_markdown(input);

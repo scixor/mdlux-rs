@@ -54,7 +54,8 @@ pub fn render_block(
                 }
                 let prefix = apply_style("| ", ctx.theme.quote_marker, ctx.capabilities.ansi);
                 out.push_str(&prefix);
-                out.push_str(line);
+                let body = apply_style(line, ctx.theme.quote_text, ctx.capabilities.ansi);
+                out.push_str(&body);
                 out.push('\n');
             }
             out.push('\n');
@@ -126,8 +127,8 @@ fn render_heading(
         };
         out.push_str(&sized);
         return match level {
-            1 => 3,
-            2 => 2,
+            1 => 4,
+            2 => 3,
             _ => 2,
         };
     }
@@ -399,7 +400,7 @@ mod tests {
             no_highlight: true,
         };
         let out = render_document(&blocks, &ctx).expect("render should work");
-        assert!(out.contains("\u{1b}]66;s=3;mdlux\u{7}\n\n\n"));
+        assert!(out.contains("\u{1b}]66;s=3;mdlux\u{7}\n\n\n\n"));
         assert!(out.contains("Terminal Markdown renderer"));
     }
 }

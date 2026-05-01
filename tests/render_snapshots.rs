@@ -122,3 +122,9 @@ fn snapshot_lists_nested_plain() {
     let out = render_fixture("lists_nested", &ctx(false, false, false, true));
     insta::assert_snapshot!("lists_nested_plain", out);
 }
+
+#[test]
+fn snapshot_markdown_embedded_fence_ansi() {
+    let out = render_fixture("markdown_embedded_fence", &ctx(true, false, false, false));
+    insta::assert_snapshot!("markdown_embedded_fence_ansi", out);
+}

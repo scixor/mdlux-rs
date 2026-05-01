@@ -43,6 +43,7 @@ static ANSI: Theme = Theme {
     inline_code: s(Some(Color::Ansi(36)), false, false, false, false),
     code: s(Some(Color::Ansi(250)), false, false, false, false),
     quote_marker: s(Some(Color::Ansi(244)), false, false, false, false),
+    quote_text: s(Some(Color::Ansi(250)), false, false, false, true),
     link_label: s(Some(Color::Ansi(39)), false, false, true, false),
     link_url: s(Some(Color::Ansi(244)), false, false, false, false),
     rule: s(Some(Color::Ansi(244)), false, false, false, false),
@@ -63,6 +64,7 @@ static DARK: Theme = Theme {
     inline_code: s(Some(Color::Rgb(86, 182, 194)), false, false, false, false),
     code: s(Some(Color::Rgb(171, 178, 191)), false, false, false, false),
     quote_marker: s(Some(Color::Rgb(92, 99, 112)), false, false, false, false),
+    quote_text: s(Some(Color::Rgb(146, 156, 172)), false, false, false, true),
     link_label: s(Some(Color::Rgb(97, 175, 239)), false, false, true, false),
     link_url: s(Some(Color::Rgb(92, 99, 112)), false, false, false, false),
     rule: s(Some(Color::Rgb(92, 99, 112)), false, false, false, false),
@@ -83,6 +85,7 @@ static LIGHT: Theme = Theme {
     inline_code: s(Some(Color::Rgb(10, 132, 255)), false, false, false, false),
     code: s(Some(Color::Rgb(35, 35, 35)), false, false, false, false),
     quote_marker: s(Some(Color::Rgb(140, 140, 140)), false, false, false, false),
+    quote_text: s(Some(Color::Rgb(110, 110, 110)), false, false, false, true),
     link_label: s(Some(Color::Rgb(0, 64, 175)), false, false, true, false),
     link_url: s(Some(Color::Rgb(100, 100, 100)), false, false, false, false),
     rule: s(Some(Color::Rgb(160, 160, 160)), false, false, false, false),
@@ -103,6 +106,7 @@ static NORD: Theme = Theme {
     inline_code: s(Some(Color::Rgb(136, 192, 208)), false, false, false, false),
     code: s(Some(Color::Rgb(216, 222, 233)), false, false, false, false),
     quote_marker: s(Some(Color::Rgb(76, 86, 106)), false, false, false, false),
+    quote_text: s(Some(Color::Rgb(180, 188, 204)), false, false, false, true),
     link_label: s(Some(Color::Rgb(129, 161, 193)), false, false, true, false),
     link_url: s(Some(Color::Rgb(94, 129, 172)), false, false, false, false),
     rule: s(Some(Color::Rgb(76, 86, 106)), false, false, false, false),
@@ -123,6 +127,7 @@ static GRUVBOX: Theme = Theme {
     inline_code: s(Some(Color::Rgb(142, 192, 124)), false, false, false, false),
     code: s(Some(Color::Rgb(235, 219, 178)), false, false, false, false),
     quote_marker: s(Some(Color::Rgb(146, 131, 116)), false, false, false, false),
+    quote_text: s(Some(Color::Rgb(204, 188, 150)), false, false, false, true),
     link_label: s(Some(Color::Rgb(131, 165, 152)), false, false, true, false),
     link_url: s(Some(Color::Rgb(168, 153, 132)), false, false, false, false),
     rule: s(Some(Color::Rgb(146, 131, 116)), false, false, false, false),
@@ -143,6 +148,7 @@ static KANAGAWA: Theme = Theme {
     inline_code: s(Some(Color::Rgb(127, 180, 202)), false, false, false, false), // springBlue
     code: s(Some(Color::Rgb(220, 215, 186)), false, false, false, false),        // fujiWhite
     quote_marker: s(Some(Color::Rgb(114, 124, 124)), false, false, false, false), // katanaGray
+    quote_text: s(Some(Color::Rgb(170, 178, 161)), false, false, false, true),   // oldWhite-ish
     link_label: s(Some(Color::Rgb(106, 149, 137)), false, false, true, false),   // waveAqua1
     link_url: s(Some(Color::Rgb(47, 73, 108)), false, true, false, false),       // waveBlue2
     rule: s(Some(Color::Rgb(114, 124, 124)), false, false, false, false),        // katanaGray

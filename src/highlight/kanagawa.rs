@@ -110,8 +110,20 @@ pub(super) fn theme() -> Theme {
             ),
             scope_style("keyword.control", Some(rgb(228, 104, 118)), None, None),
             scope_style(
+                "storage, storage.type, storage.modifier, keyword.declaration",
+                Some(rgb(228, 104, 118)),
+                None,
+                None,
+            ),
+            scope_style(
                 "keyword.control.return, keyword.control.exception",
                 Some(rgb(255, 93, 98)),
+                None,
+                None,
+            ),
+            scope_style(
+                "keyword.operator.type.annotation, punctuation.separator.type.annotation, meta.type.annotation",
+                Some(rgb(122, 168, 159)),
                 None,
                 None,
             ),
@@ -173,7 +185,19 @@ pub(super) fn theme() -> Theme {
                 None,
             ),
             scope_style("entity.name.type", Some(rgb(230, 195, 132)), None, None),
+            scope_style(
+                "support.type.primitive, support.type.builtin",
+                Some(rgb(127, 180, 202)),
+                None,
+                None,
+            ),
             scope_style("support.type", Some(rgb(122, 168, 159)), None, None),
+            scope_style(
+                "variable.language.this, variable.language.super, variable.language.import-export",
+                Some(rgb(163, 212, 213)),
+                None,
+                None,
+            ),
             scope_style(
                 "meta.command.shell, meta.statement.shell, meta.scope.for-in.shell, meta.scope.case-block.shell, meta.scope.if-block.shell, meta.group.shell",
                 Some(rgb(220, 215, 186)),

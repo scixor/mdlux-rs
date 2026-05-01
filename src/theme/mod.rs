@@ -29,6 +29,7 @@ pub struct Theme {
     pub inline_code: Style,
     pub code: Style,
     pub quote_marker: Style,
+    pub quote_text: Style,
     pub link_label: Style,
     pub link_url: Style,
     pub rule: Style,
