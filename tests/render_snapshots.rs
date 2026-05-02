@@ -14,7 +14,7 @@ fn ctx(
 ) -> RenderContext {
     RenderContext {
         width: 72,
-        theme: find_theme("ansi").expect("theme must exist").clone(),
+        theme: *find_theme("ansi").expect("theme must exist"),
         capabilities: Capabilities {
             ansi,
             kitty_text_size,

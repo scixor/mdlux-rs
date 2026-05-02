@@ -174,11 +174,7 @@ fn parse_fence_start(line: &str) -> Option<(char, usize, Option<&str>)> {
         .trim_matches('}')
         .trim_start_matches('.');
 
-    if token.is_empty() {
-        Some((marker, count, None))
-    } else {
-        Some((marker, count, Some(token)))
-    }
+    Some((marker, count, (!token.is_empty()).then_some(token)))
 }
 
 fn is_fence_terminator(line: &str, marker: char, min_len: usize) -> bool {
@@ -227,15 +223,7 @@ fn normalize_lang(lang: &str) -> String {
 
 fn aliases(lang: &str) -> &'static [&'static str] {
     match lang {
-        "typescript" => &[
-            "typescript",
-            "TypeScript",
-            "javascript",
-            "JavaScript",
-            "js",
-            "rust",
-        ],
-        "ts" => &[
+        "typescript" | "ts" => &[
             "typescript",
             "TypeScript",
             "javascript",
@@ -291,10 +279,8 @@ fn choose_theme_name(theme: &str, ts: &ThemeSet) -> String {
         _ => &["base16-ocean.dark", "InspiredGitHub"],
     };
 
-    for name in candidates {
-        if ts.themes.contains_key(*name) {
-            return (*name).to_string();
-        }
+    if let Some(name) = candidates.iter().find(|n| ts.themes.contains_key(**n)) {
+        return name.to_string();
     }
     ts.themes
         .keys()

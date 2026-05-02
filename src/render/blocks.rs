@@ -24,8 +24,13 @@ pub fn render_block(
 ) -> Result<()> {
     match block {
         Block::Heading { level, content } => {
-            let trailing_newlines = render_heading(*level, content, ctx, out);
-            for _ in 0..trailing_newlines {
+            render_heading(*level, content, ctx, out);
+            let trailing = match (ctx.capabilities.kitty_text_size, *level) {
+                (true, 1) => 4,
+                (true, 2) => 3,
+                _ => 2,
+            };
+            for _ in 0..trailing {
                 out.push('\n');
             }
         }
@@ -111,31 +116,25 @@ pub fn render_block(
     Ok(())
 }
 
-fn render_heading(level: u8, inlines: &[Inline], ctx: &RenderContext, out: &mut String) -> usize {
+fn render_heading(level: u8, inlines: &[Inline], ctx: &RenderContext, out: &mut String) {
     let raw = Inline::plain_text(inlines).trim().to_string();
     let ansi = ctx.capabilities.ansi;
 
-    if ctx.capabilities.kitty_text_size {
-        // s=3 gives 3-row block (H1), s=2 gives 2-row block (H2); H3+ fall back to ANSI.
-        // ANSI codes must not be nested inside OSC 66 text payload.
-        let (text, trailing) = match level {
-            1 => (sized_text(&raw, TextSize::Scale(3)), 4),
-            2 => (sized_text(&raw, TextSize::Scale(2)), 3),
-            3 => (apply_style(&raw, ctx.theme.heading3, ansi), 2),
-            _ => (apply_style(&raw, ctx.theme.heading4, ansi), 2),
+    // s=3 gives 3-row block (H1), s=2 gives 2-row block (H2); H3+ fall back to ANSI.
+    // ANSI codes must not be nested inside OSC 66 text payload.
+    let text = if ctx.capabilities.kitty_text_size && level <= 2 {
+        let size = TextSize::Scale(if level == 1 { 3 } else { 2 });
+        sized_text(&raw, size)
+    } else {
+        let style = match level {
+            1 => ctx.theme.heading1,
+            2 => ctx.theme.heading2,
+            3 => ctx.theme.heading3,
+            _ => ctx.theme.heading4,
         };
-        out.push_str(&text);
-        return trailing;
-    }
-
-    let style = match level {
-        1 => ctx.theme.heading1,
-        2 => ctx.theme.heading2,
-        3 => ctx.theme.heading3,
-        _ => ctx.theme.heading4,
+        apply_style(&raw, style, ansi)
     };
-    out.push_str(&apply_style(&raw, style, ansi));
-    2
+    out.push_str(&text);
 }
 
 fn render_code_block(
@@ -247,28 +246,28 @@ fn push_indented(out: &mut String, label: &str, indent: &str, body: &str) {
 }
 
 fn render_image_block(alt: &str, path: &str, ctx: &RenderContext, out: &mut String) -> Result<()> {
-    let resolved = if Path::new(path).is_absolute() {
-        Path::new(path).to_path_buf()
+    let p = Path::new(path);
+    let resolved = if p.is_absolute() {
+        p.to_path_buf()
     } else {
-        ctx.source_dir.join(path)
+        ctx.source_dir.join(p)
     };
 
-    if ctx.capabilities.kitty_graphics {
-        let image = render_image(
+    if ctx.capabilities.kitty_graphics
+        && let Ok(seq) = render_image(
             &resolved,
             KittyImageOptions {
                 max_width_cells: ctx.width.min(80) as u16,
                 max_height_cells: None,
             },
-        );
-        if let Ok(seq) = image {
-            out.push_str(&seq);
-            if !alt.trim().is_empty() {
-                out.push('\n');
-                out.push_str(alt);
-            }
-            return Ok(());
+        )
+    {
+        out.push_str(&seq);
+        if !alt.trim().is_empty() {
+            out.push('\n');
+            out.push_str(alt);
         }
+        return Ok(());
     }
 
     out.push_str(&format!("[image: {} - {}]", alt, path));
@@ -302,13 +301,8 @@ mod tests {
         ];
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
-            capabilities: Capabilities {
-                ansi: false,
-                kitty_text_size: false,
-                kitty_graphics: false,
-                kitty_hyperlinks: false,
-            },
+            theme: *find_theme("ansi").expect("theme exists"),
+            capabilities: Capabilities::default(),
             source_dir: PathBuf::from("."),
             no_highlight: false,
         };
@@ -326,13 +320,8 @@ mod tests {
         }];
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
-            capabilities: Capabilities {
-                ansi: false,
-                kitty_text_size: false,
-                kitty_graphics: false,
-                kitty_hyperlinks: false,
-            },
+            theme: *find_theme("ansi").expect("theme exists"),
+            capabilities: Capabilities::default(),
             source_dir: PathBuf::from("."),
             no_highlight: false,
         };
@@ -351,12 +340,10 @@ mod tests {
         ];
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
+            theme: *find_theme("ansi").expect("theme exists"),
             capabilities: Capabilities {
                 ansi: true,
-                kitty_text_size: false,
-                kitty_graphics: false,
-                kitty_hyperlinks: false,
+                ..Capabilities::default()
             },
             source_dir: PathBuf::from("."),
             no_highlight: false,
@@ -377,12 +364,10 @@ mod tests {
         ];
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
+            theme: *find_theme("ansi").expect("theme exists"),
             capabilities: Capabilities {
-                ansi: false,
                 kitty_text_size: true,
-                kitty_graphics: false,
-                kitty_hyperlinks: false,
+                ..Capabilities::default()
             },
             source_dir: PathBuf::from("."),
             no_highlight: true,

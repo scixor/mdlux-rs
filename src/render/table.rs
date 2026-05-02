@@ -69,7 +69,7 @@ fn render_table_fallback(table: &RenderedTable) -> String {
     let mut out = String::new();
     for row in &table.rows {
         for (i, header) in table.headers.iter().enumerate() {
-            let value = row.get(i).cloned().unwrap_or_default();
+            let value = row.get(i).map(|s| s.as_str()).unwrap_or("");
             out.push_str(&format!("{header}: {value}\n"));
         }
         out.push('\n');
@@ -93,9 +93,9 @@ fn render_row(
     let mut out = String::new();
     out.push_str(&apply_style("|", border_style, ansi));
     for (idx, width) in widths.iter().enumerate() {
-        let cell = row.get(idx).cloned().unwrap_or_default();
+        let cell = row.get(idx).map(|s| s.as_str()).unwrap_or("");
         let align = aligns.get(idx).copied().unwrap_or(Alignment::Left);
-        let padded = pad_visible(&cell, *width, align);
+        let padded = pad_visible(cell, *width, align);
         let styled_cell = apply_style(&format!(" {padded} "), row_style, ansi);
         out.push_str(&styled_cell);
         out.push_str(&apply_style("|", border_style, ansi));

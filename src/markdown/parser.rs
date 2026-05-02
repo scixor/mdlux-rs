@@ -43,6 +43,16 @@ enum InlineEnd {
     TableCell,
 }
 
+fn push_paragraph_or_image(inlines: Vec<Inline>, blocks: &mut Vec<Block>) {
+    if inlines.is_empty() {
+        return;
+    }
+    match image_only_paragraph(&inlines) {
+        Some(image) => blocks.push(image),
+        None => blocks.push(Block::Paragraph(inlines)),
+    }
+}
+
 impl<'a> EventParser<'a> {
     fn parse_blocks_until(&mut self, end: BlockEnd) -> Vec<Block> {
         let mut blocks = Vec::new();
@@ -67,14 +77,7 @@ impl<'a> EventParser<'a> {
                 | Event::Start(Tag::Strikethrough)
                 | Event::Start(Tag::Link { .. })
                 | Event::Start(Tag::Image { .. }) => {
-                    let inlines = self.parse_tight_inlines(end);
-                    if !inlines.is_empty() {
-                        if let Some(image) = image_only_paragraph(&inlines) {
-                            blocks.push(image);
-                        } else {
-                            blocks.push(Block::Paragraph(inlines));
-                        }
-                    }
+                    push_paragraph_or_image(self.parse_tight_inlines(end), &mut blocks);
                 }
                 Event::Start(tag) => match tag {
                     Tag::Heading { level, .. } => {
@@ -88,11 +91,7 @@ impl<'a> EventParser<'a> {
                     Tag::Paragraph => {
                         self.idx += 1;
                         let inlines = self.parse_inlines_until(InlineEnd::Paragraph);
-                        if let Some(image) = image_only_paragraph(&inlines) {
-                            blocks.push(image);
-                        } else {
-                            blocks.push(Block::Paragraph(inlines));
-                        }
+                        push_paragraph_or_image(inlines, &mut blocks);
                     }
                     Tag::CodeBlock(kind) => {
                         let lang = extract_lang(kind);
@@ -186,7 +185,7 @@ impl<'a> EventParser<'a> {
                 Event::End(TagEnd::TableRow) => {
                     self.idx += 1;
                     if !current_row.is_empty() {
-                        rows.push(current_row.clone());
+                        rows.push(std::mem::take(&mut current_row));
                     }
                 }
                 Event::Start(Tag::TableCell) => {
@@ -405,11 +404,7 @@ fn heading_to_u8(level: HeadingLevel) -> u8 {
 }
 
 fn to_opt(input: &CowStr<'_>) -> Option<String> {
-    if input.is_empty() {
-        None
-    } else {
-        Some(input.to_string())
-    }
+    (!input.is_empty()).then(|| input.to_string())
 }
 
 fn image_only_paragraph(inlines: &[Inline]) -> Option<Block> {
