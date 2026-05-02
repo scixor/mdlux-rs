@@ -6,16 +6,16 @@ pub fn apply_style(input: &str, style: Style, ansi: bool) -> String {
     }
     let mut parts: Vec<String> = Vec::new();
     if style.bold {
-        parts.push("1".to_string());
+        parts.push("1".into());
     }
     if style.dim {
-        parts.push("2".to_string());
+        parts.push("2".into());
     }
     if style.italic {
-        parts.push("3".to_string());
+        parts.push("3".into());
     }
     if style.underline {
-        parts.push("4".to_string());
+        parts.push("4".into());
     }
     if let Some(fg) = style.fg {
         match fg {

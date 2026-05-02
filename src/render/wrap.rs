@@ -52,22 +52,7 @@ pub fn wrap_spans(spans: &[Span], width: usize) -> Vec<Vec<Span>> {
             }
             TokenKind::Word => {
                 let token_w = visible_width(&token.text);
-                if token.text.contains('\u{1b}') {
-                    if line_width + token_w > width && !line.is_empty() {
-                        lines.push(trim_end_spaces(std::mem::take(&mut line)));
-                        line_width = 0;
-                    }
-                    push_span(
-                        &mut line,
-                        Span {
-                            text: token.text,
-                            style: token.style,
-                        },
-                    );
-                    line_width += token_w;
-                    continue;
-                }
-                if token_w <= width {
+                if token_w <= width || token.text.contains('\u{1b}') {
                     if line_width + token_w > width && !line.is_empty() {
                         lines.push(trim_end_spaces(std::mem::take(&mut line)));
                         line_width = 0;

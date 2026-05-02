@@ -6,28 +6,20 @@ fn detect_kitty_env() -> bool {
         || std::env::var("TERM").is_ok_and(|term| term.contains("kitty"))
 }
 
-fn resolve_mode(mode: FeatureMode, is_plain: bool, default: bool) -> bool {
-    if is_plain {
-        return false;
-    }
-    match mode {
-        FeatureMode::Always => true,
-        FeatureMode::Never => false,
-        FeatureMode::Auto => default,
-    }
-}
-
 pub fn detect_capabilities(cli: &Cli) -> Capabilities {
     let is_plain = cli.plain;
     let is_kitty = detect_kitty_env();
 
-    let kitty_text_size = resolve_mode(cli.text_size, is_plain, is_kitty);
-    let kitty_graphics = resolve_mode(cli.images, is_plain, is_kitty);
+    let resolve = |mode: FeatureMode| match mode {
+        FeatureMode::Always => !is_plain,
+        FeatureMode::Never => false,
+        FeatureMode::Auto => is_kitty && !is_plain,
+    };
 
     Capabilities {
         ansi: !is_plain,
-        kitty_text_size,
-        kitty_graphics,
-        kitty_hyperlinks: kitty_text_size,
+        kitty_text_size: resolve(cli.text_size),
+        kitty_graphics: resolve(cli.images),
+        kitty_hyperlinks: resolve(cli.text_size),
     }
 }

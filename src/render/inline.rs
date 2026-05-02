@@ -48,8 +48,7 @@ fn push_inline(inline: &Inline, base: &Style, ctx: &RenderContext, out: &mut Vec
             }
         }
         Inline::Strike(inner) => {
-            let mut strike_style = *base;
-            strike_style.dim = true;
+            let strike_style = Style { dim: true, ..*base };
             for item in inner {
                 push_inline(item, &strike_style, ctx, out);
             }
@@ -125,12 +124,10 @@ mod tests {
     fn link_includes_destination() {
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
+            theme: *find_theme("ansi").expect("theme exists"),
             capabilities: Capabilities {
                 ansi: true,
-                kitty_text_size: false,
-                kitty_graphics: false,
-                kitty_hyperlinks: false,
+                ..Capabilities::default()
             },
             source_dir: PathBuf::from("."),
             no_highlight: false,
@@ -151,12 +148,11 @@ mod tests {
     fn kitty_link_hides_raw_url() {
         let ctx = RenderContext {
             width: 80,
-            theme: find_theme("ansi").expect("theme exists").clone(),
+            theme: *find_theme("ansi").expect("theme exists"),
             capabilities: Capabilities {
                 ansi: true,
-                kitty_text_size: true,
-                kitty_graphics: false,
                 kitty_hyperlinks: true,
+                ..Capabilities::default()
             },
             source_dir: PathBuf::from("."),
             no_highlight: false,

@@ -11,37 +11,29 @@ pub fn strip_ansi(input: &str) -> String {
     let mut chars = input.chars().peekable();
     while let Some(ch) = chars.next() {
         if ch == '\u{1b}' {
-            if matches!(chars.peek(), Some('[')) {
-                let _ = chars.next();
-                for c in chars.by_ref() {
-                    if ('@'..='~').contains(&c) {
-                        break;
+            match chars.peek() {
+                Some('[') => {
+                    let _ = chars.next();
+                    for c in chars.by_ref() {
+                        if ('@'..='~').contains(&c) {
+                            break;
+                        }
                     }
                 }
-                continue;
-            }
-            if matches!(chars.peek(), Some(']')) {
-                let _ = chars.next();
-                let mut prev = '\0';
-                for c in chars.by_ref() {
-                    if c == '\u{7}' || (prev == '\u{1b}' && c == '\\') {
-                        break;
+                Some(&kind @ (']' | '_')) => {
+                    let _ = chars.next();
+                    let check_bel = kind == ']';
+                    let mut prev = '\0';
+                    for c in chars.by_ref() {
+                        if (check_bel && c == '\u{7}') || (prev == '\u{1b}' && c == '\\') {
+                            break;
+                        }
+                        prev = c;
                     }
-                    prev = c;
                 }
-                continue;
+                _ => out.push(ch),
             }
-            if matches!(chars.peek(), Some('_')) {
-                let _ = chars.next();
-                let mut prev = '\0';
-                for c in chars.by_ref() {
-                    if prev == '\u{1b}' && c == '\\' {
-                        break;
-                    }
-                    prev = c;
-                }
-                continue;
-            }
+            continue;
         }
         out.push(ch);
     }

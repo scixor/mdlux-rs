@@ -1,7 +1,6 @@
-use std::str::FromStr;
-use syntect::highlighting::{
-    Color, FontStyle, ScopeSelectors, StyleModifier, Theme, ThemeItem, ThemeSettings,
-};
+use syntect::highlighting::{FontStyle, Theme, ThemeSettings};
+
+use super::{rgb, scope_style};
 
 pub(super) fn theme() -> Theme {
     Theme {
@@ -236,24 +235,4 @@ pub(super) fn theme() -> Theme {
             scope_style("invalid", Some(rgb(255, 93, 98)), None, None),
         ],
     }
-}
-
-fn scope_style(
-    scope: &str,
-    foreground: Option<Color>,
-    background: Option<Color>,
-    font_style: Option<FontStyle>,
-) -> ThemeItem {
-    ThemeItem {
-        scope: ScopeSelectors::from_str(scope).expect("valid scope selector"),
-        style: StyleModifier {
-            foreground,
-            background,
-            font_style,
-        },
-    }
-}
-
-const fn rgb(r: u8, g: u8, b: u8) -> Color {
-    Color { r, g, b, a: 0xFF }
 }

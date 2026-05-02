@@ -16,7 +16,7 @@ pub struct Style {
     pub dim: bool,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Theme {
     pub name: &'static str,
     pub heading1: Style,

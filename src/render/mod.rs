@@ -12,7 +12,7 @@ use crate::highlight::syntect::Highlighter;
 use crate::markdown::ast::Block;
 use crate::theme::Theme;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct Capabilities {
     pub ansi: bool,
     pub kitty_text_size: bool,
@@ -30,11 +30,8 @@ pub struct RenderContext {
 
 pub fn render_document(blocks: &[Block], ctx: &RenderContext) -> Result<String> {
     let mut out = String::new();
-    let highlighter = if ctx.capabilities.ansi && !ctx.no_highlight {
-        Some(Highlighter::new(ctx.theme.name))
-    } else {
-        None
-    };
+    let highlighter =
+        (ctx.capabilities.ansi && !ctx.no_highlight).then(|| Highlighter::new(ctx.theme.name));
 
     let mut state = blocks::RenderState { highlighter };
     for block in blocks {
