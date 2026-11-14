@@ -5,13 +5,17 @@ use pulldown_cmark::{
 
 use crate::markdown::ast::{Alignment, Block, Inline};
 
+use html_to_markdown_rs::convert as convert_html;
+
 pub fn parse_markdown(input: &str) -> Vec<Block> {
+    let input = preprocess_html(input);
     let options = Options::ENABLE_TABLES
         | Options::ENABLE_TASKLISTS
         | Options::ENABLE_STRIKETHROUGH
-        | Options::ENABLE_FOOTNOTES;
+        | Options::ENABLE_FOOTNOTES
+        | Options::ENABLE_GFM;
 
-    let parser = Parser::new_ext(input, options);
+    let parser = Parser::new_ext(&input, options);
     let events = parser.collect::<Vec<_>>();
     let mut p = EventParser { events, idx: 0 };
     p.parse_blocks_until(BlockEnd::Never)
@@ -99,9 +103,17 @@ impl<'a> EventParser<'a> {
                         let code = self.collect_code_text();
                         blocks.push(Block::CodeBlock { lang, code });
                     }
-                    Tag::BlockQuote(_) => {
+                    Tag::BlockQuote(kind) => {
                         self.idx += 1;
-                        let inner = self.parse_blocks_until(BlockEnd::BlockQuote);
+                        let mut inner = self.parse_blocks_until(BlockEnd::BlockQuote);
+                        if let Some(label) = blockquote_kind_label(kind) {
+                            inner.insert(
+                                0,
+                                Block::Paragraph(vec![Inline::Strong(vec![Inline::Text(
+                                    label.to_string(),
+                                )])]),
+                            );
+                        }
                         blocks.push(Block::BlockQuote(inner));
                     }
                     Tag::List(start) => {
@@ -334,6 +346,17 @@ impl<'a> EventParser<'a> {
     }
 }
 
+fn blockquote_kind_label(kind: &Option<pulldown_cmark::BlockQuoteKind>) -> Option<&'static str> {
+    match kind {
+        Some(pulldown_cmark::BlockQuoteKind::Note) => Some("Note"),
+        Some(pulldown_cmark::BlockQuoteKind::Tip) => Some("Tip"),
+        Some(pulldown_cmark::BlockQuoteKind::Important) => Some("Important"),
+        Some(pulldown_cmark::BlockQuoteKind::Warning) => Some("Warning"),
+        Some(pulldown_cmark::BlockQuoteKind::Caution) => Some("Caution"),
+        _ => None,
+    }
+}
+
 fn is_block_end(ev: &Event<'_>, end: BlockEnd) -> bool {
     match end {
         BlockEnd::Never => false,
@@ -422,6 +445,226 @@ fn image_only_paragraph(inlines: &[Inline]) -> Option<Block> {
 }
 
 // Tests
+fn preprocess_html(input: &str) -> String {
+    if input.is_empty() {
+        return String::new();
+    }
+    if !input.contains('<') {
+        return input.to_string();
+    }
+
+    let lines: Vec<&str> = input.split('\n').collect();
+    let mut out = String::new();
+    let mut i = 0usize;
+    let mut in_code_fence = false;
+    let mut fence_char = ' ';
+    let mut fence_len = 0usize;
+
+    while i < lines.len() {
+        if let Some((ch, len)) = fence_marker(lines[i]) {
+            if !in_code_fence {
+                in_code_fence = true;
+                fence_char = ch;
+                fence_len = len;
+                out.push_str(lines[i]);
+                if i + 1 < lines.len() {
+                    out.push('\n');
+                }
+                i += 1;
+                continue;
+            } else if ch == fence_char && len >= fence_len {
+                let rest = lines[i].trim_start()[len..].trim();
+                if rest.is_empty() {
+                    in_code_fence = false;
+                    out.push_str(lines[i]);
+                    if i + 1 < lines.len() {
+                        out.push('\n');
+                    }
+                    i += 1;
+                    continue;
+                }
+            }
+        }
+
+        if in_code_fence {
+            out.push_str(lines[i]);
+            if i + 1 < lines.len() {
+                out.push('\n');
+            }
+            i += 1;
+            continue;
+        }
+
+        let trimmed = lines[i].trim();
+        if looks_like_html_block_start(trimmed) {
+            let mut buf = String::new();
+            buf.push_str(lines[i]);
+            let mut j = i + 1;
+            while j < lines.len() {
+                if lines[j].trim().is_empty() {
+                    break;
+                }
+                if fence_marker(lines[j]).is_some() {
+                    break;
+                }
+                buf.push('\n');
+                buf.push_str(lines[j]);
+                j += 1;
+            }
+
+            if let Ok(result) = convert_html(&buf, None) {
+                let content = result.content.unwrap_or_default();
+                out.push_str(content.trim_end_matches('\n'));
+                out.push_str("\n\n");
+            } else {
+                out.push_str(&buf);
+                if i + 1 < lines.len() {
+                    out.push('\n');
+                }
+            }
+            i = j;
+            continue;
+        }
+
+        out.push_str(&transform_inline_html(lines[i]));
+        if i + 1 < lines.len() {
+            out.push('\n');
+        }
+        i += 1;
+    }
+    out
+}
+
+fn looks_like_html_block_start(s: &str) -> bool {
+    let Some(second) = s.chars().nth(1) else {
+        return false;
+    };
+    if !s.starts_with('<') {
+        return false;
+    }
+    if !(second.is_alphabetic() || second == '/' || second == '!' || second == '?') {
+        return false;
+    }
+    find_tag_end(s).is_some()
+}
+
+fn fence_marker(line: &str) -> Option<(char, usize)> {
+    let trimmed = line.trim_start();
+    let marker = trimmed.chars().next()?;
+    if marker != '`' && marker != '~' {
+        return None;
+    }
+    let count = trimmed.chars().take_while(|c| *c == marker).count();
+    if count >= 3 {
+        Some((marker, count))
+    } else {
+        None
+    }
+}
+
+fn find_tag_end(s: &str) -> Option<usize> {
+    let bytes = s.as_bytes();
+    let mut in_single = false;
+    let mut in_double = false;
+    for i in 0..s.len() {
+        let c = bytes[i] as char;
+        if c == '\'' && !in_double {
+            in_single = !in_single;
+        } else if c == '"' && !in_single {
+            in_double = !in_double;
+        } else if c == '>' && !in_single && !in_double {
+            return Some(i);
+        }
+    }
+    None
+}
+
+fn is_html_tag(tag: &str) -> bool {
+    if !tag.starts_with('<') || !tag.ends_with('>') {
+        return false;
+    }
+    let body = &tag[1..tag.len() - 1];
+    let body = body.trim_start_matches('/');
+    let first = body.chars().next().unwrap_or(' ');
+    first.is_alphabetic() || first == '!' || first == '?'
+}
+
+fn transform_inline_html(line: &str) -> String {
+    if !line.contains('<') {
+        return line.to_string();
+    }
+    let mut out = String::new();
+    let mut pos = 0usize;
+    let bytes = line.as_bytes();
+    while pos < line.len() {
+        let ch = line[pos..].chars().next().unwrap();
+        let ch_len = ch.len_utf8();
+        if ch == '`' {
+            // preserve code spans verbatim
+            let mut run = 0usize;
+            while pos + run < line.len() && bytes[pos + run] == b'`' {
+                run += 1;
+            }
+            let mut j = pos + run;
+            let mut found = None;
+            while j < line.len() {
+                if bytes[j] == b'`' {
+                    let mut r = 0usize;
+                    while j + r < line.len() && bytes[j + r] == b'`' {
+                        r += 1;
+                    }
+                    if r >= run {
+                        found = Some((j, r));
+                        break;
+                    }
+                    j += r.max(1);
+                } else {
+                    j += 1;
+                }
+            }
+            if let Some((end, r)) = found {
+                let end_pos = end + r;
+                out.push_str(&line[pos..end_pos]);
+                pos = end_pos;
+            } else {
+                out.push(ch);
+                pos += ch_len;
+            }
+        } else if ch == '<' {
+            let rest = &line[pos..];
+            if let Some(end_rel) = find_tag_end(rest) {
+                let tag = &line[pos..pos + end_rel + 1];
+                if is_html_tag(tag) {
+                    let mut converted = convert_html(tag, None)
+                        .ok()
+                        .and_then(|r| r.content)
+                        .unwrap_or_else(|| tag.to_string());
+                    if converted.ends_with('\n') {
+                        converted = converted.trim_end_matches('\n').to_string();
+                    }
+                    if converted.is_empty() {
+                        if tag.to_ascii_lowercase().contains("<br") {
+                            converted = "  \n".to_string();
+                        }
+                    }
+                    out.push_str(&converted);
+                    pos += tag.len();
+                } else {
+                    out.push(ch);
+                    pos += ch_len;
+                }
+            } else {
+                out.push(ch);
+                pos += ch_len;
+            }
+        } else {
+            out.push(ch);
+            pos += ch_len;
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::parse_markdown;
