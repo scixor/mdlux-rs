@@ -124,13 +124,20 @@ mod tests {
     fn link_includes_destination() {
         let ctx = RenderContext {
             width: 80,
-            theme: *find_theme("ansi").expect("theme exists"),
+            theme: find_theme("ansi").expect("theme exists").to_owned(),
             capabilities: Capabilities {
                 ansi: true,
                 ..Capabilities::default()
             },
             source_dir: PathBuf::from("."),
             no_highlight: false,
+            code_theme_name: None,
+            media: &[],
+            embed_media: false,
+            cell_width_px: None,
+            cell_height_px: None,
+            max_media_width_cells: None,
+            max_media_height_cells: None,
         };
         let spans = render_inlines_to_spans(
             &[Inline::Link {
@@ -148,7 +155,7 @@ mod tests {
     fn kitty_link_hides_raw_url() {
         let ctx = RenderContext {
             width: 80,
-            theme: *find_theme("ansi").expect("theme exists"),
+            theme: find_theme("ansi").expect("theme exists").to_owned(),
             capabilities: Capabilities {
                 ansi: true,
                 kitty_hyperlinks: true,
@@ -156,6 +163,13 @@ mod tests {
             },
             source_dir: PathBuf::from("."),
             no_highlight: false,
+            code_theme_name: None,
+            media: &[],
+            embed_media: false,
+            cell_width_px: None,
+            cell_height_px: None,
+            max_media_width_cells: None,
+            max_media_height_cells: None,
         };
         let spans = render_inlines_to_spans(
             &[Inline::Link {

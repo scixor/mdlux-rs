@@ -566,8 +566,8 @@ fn find_tag_end(s: &str) -> Option<usize> {
     let bytes = s.as_bytes();
     let mut in_single = false;
     let mut in_double = false;
-    for i in 0..s.len() {
-        let c = bytes[i] as char;
+    for (i, byte) in bytes.iter().enumerate() {
+        let c = *byte as char;
         if c == '\'' && !in_double {
             in_single = !in_single;
         } else if c == '"' && !in_single {
@@ -579,90 +579,176 @@ fn find_tag_end(s: &str) -> Option<usize> {
     None
 }
 
-fn is_html_tag(tag: &str) -> bool {
-    if !tag.starts_with('<') || !tag.ends_with('>') {
-        return false;
-    }
-    let body = &tag[1..tag.len() - 1];
-    let body = body.trim_start_matches('/');
-    let first = body.chars().next().unwrap_or(' ');
-    first.is_alphabetic() || first == '!' || first == '?'
-}
-
 fn transform_inline_html(line: &str) -> String {
     if !line.contains('<') {
         return line.to_string();
     }
+
+    let mut stack: Vec<String> = Vec::new();
+    let mut pending_start: Option<usize> = None;
     let mut out = String::new();
-    let mut pos = 0usize;
-    let bytes = line.as_bytes();
-    while pos < line.len() {
-        let ch = line[pos..].chars().next().unwrap();
+    let mut cursor = 0usize;
+
+    while cursor < line.len() {
+        let ch = line[cursor..].chars().next().unwrap();
         let ch_len = ch.len_utf8();
         if ch == '`' {
-            // preserve code spans verbatim
-            let mut run = 0usize;
-            while pos + run < line.len() && bytes[pos + run] == b'`' {
-                run += 1;
-            }
-            let mut j = pos + run;
-            let mut found = None;
-            while j < line.len() {
-                if bytes[j] == b'`' {
-                    let mut r = 0usize;
-                    while j + r < line.len() && bytes[j + r] == b'`' {
-                        r += 1;
-                    }
-                    if r >= run {
-                        found = Some((j, r));
-                        break;
-                    }
-                    j += r.max(1);
-                } else {
-                    j += 1;
-                }
-            }
-            if let Some((end, r)) = found {
-                let end_pos = end + r;
-                out.push_str(&line[pos..end_pos]);
-                pos = end_pos;
-            } else {
+            let Some(next) = code_span_end(line, cursor) else {
                 out.push(ch);
-                pos += ch_len;
+                cursor += ch_len;
+                continue;
+            };
+            if pending_start.is_none() {
+                out.push_str(&line[cursor..next]);
             }
-        } else if ch == '<' {
-            let rest = &line[pos..];
-            if let Some(end_rel) = find_tag_end(rest) {
-                let tag = &line[pos..pos + end_rel + 1];
-                if is_html_tag(tag) {
-                    let mut converted = convert_html(tag, None)
-                        .ok()
-                        .and_then(|r| r.content)
-                        .unwrap_or_else(|| tag.to_string());
-                    if converted.ends_with('\n') {
-                        converted = converted.trim_end_matches('\n').to_string();
-                    }
-                    if converted.is_empty() {
-                        if tag.to_ascii_lowercase().contains("<br") {
-                            converted = "  \n".to_string();
-                        }
-                    }
-                    out.push_str(&converted);
-                    pos += tag.len();
-                } else {
-                    out.push(ch);
-                    pos += ch_len;
-                }
-            } else {
+            cursor = next;
+            continue;
+        }
+        if ch != '<' {
+            if pending_start.is_none() {
                 out.push(ch);
-                pos += ch_len;
             }
-        } else {
-            out.push(ch);
-            pos += ch_len;
+            cursor += ch_len;
+            continue;
+        }
+
+        let Some(end_rel) = find_tag_end(&line[cursor..]) else {
+            if pending_start.is_none() {
+                out.push(ch);
+            }
+            cursor += ch_len;
+            continue;
+        };
+
+        let tag = &line[cursor..cursor + end_rel + 1];
+        let Some(name) = html_tag_name(tag) else {
+            if pending_start.is_none() {
+                out.push_str(tag);
+            }
+            cursor += tag.len();
+            continue;
+        };
+
+        let is_closing = tag.starts_with("</");
+        let self_closing = tag.ends_with("/>");
+        let is_void = matches!(
+            name.to_ascii_lowercase().as_str(),
+            "area"
+                | "base"
+                | "br"
+                | "col"
+                | "embed"
+                | "hr"
+                | "img"
+                | "input"
+                | "link"
+                | "meta"
+                | "source"
+                | "track"
+                | "wbr"
+        );
+
+        if is_closing {
+            if let Some(open_name) = stack.last()
+                && open_name.eq_ignore_ascii_case(&name)
+            {
+                stack.pop();
+                cursor += tag.len();
+                if stack.is_empty() {
+                    let start = pending_start.take().unwrap_or(0);
+                    convert_inline_fragment(&line[start..cursor], &mut out);
+                }
+                continue;
+            }
+            if pending_start.is_none() {
+                out.push_str(tag);
+            }
+            cursor += tag.len();
+            continue;
+        }
+
+        pending_start.get_or_insert(cursor);
+        stack.push(name);
+        cursor += tag.len();
+        if self_closing || is_void {
+            stack.pop();
+            if stack.is_empty() {
+                let start = pending_start.take().unwrap_or(0);
+                convert_inline_fragment(&line[start..cursor], &mut out);
+            }
         }
     }
+    if pending_start.is_some() || !stack.is_empty() {
+        return line.to_string();
+    }
     out
+}
+
+fn convert_inline_fragment(fragment: &str, out: &mut String) {
+    let is_br = fragment
+        .strip_prefix('<')
+        .and_then(|body| body.strip_suffix('>'))
+        .and_then(|body| {
+            body.trim_start()
+                .split(|ch: char| ch.is_whitespace() || ch == '/')
+                .next()
+        })
+        .is_some_and(|name| name.eq_ignore_ascii_case("br"));
+    if is_br {
+        out.push_str("  \n");
+        return;
+    }
+    let converted = convert_html(fragment, None)
+        .ok()
+        .and_then(|result| result.content)
+        .unwrap_or_else(|| fragment.to_string());
+    out.push_str(converted.trim_end_matches('\n'));
+}
+
+fn code_span_end(line: &str, start: usize) -> Option<usize> {
+    let mut run = 0usize;
+    for byte in &line.as_bytes()[start..] {
+        if *byte != b'`' {
+            break;
+        }
+        run += 1;
+    }
+    if run == 0 {
+        return None;
+    }
+    let mut cursor = start + run;
+    while cursor < line.len() {
+        if line.as_bytes()[cursor] == b'`' {
+            let mut close = 0usize;
+            for byte in &line.as_bytes()[cursor..] {
+                if *byte != b'`' {
+                    break;
+                }
+                close += 1;
+            }
+            if close >= run {
+                return Some(cursor + close);
+            }
+            cursor += close.max(1);
+        } else {
+            cursor += line[cursor..].chars().next().unwrap().len_utf8();
+        }
+    }
+    None
+}
+
+fn html_tag_name(tag: &str) -> Option<String> {
+    let body = tag
+        .strip_prefix("</")
+        .unwrap_or_else(|| tag.strip_prefix('<').unwrap_or(tag));
+    if body.is_empty() || body.starts_with('!') || body.starts_with('?') {
+        return None;
+    }
+    let name: String = body
+        .chars()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '-' | '_' | ':'))
+        .collect();
+    (!name.is_empty()).then_some(name)
 }
 
 #[cfg(test)]

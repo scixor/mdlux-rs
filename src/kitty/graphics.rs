@@ -32,18 +32,22 @@ pub fn render_image(path: &Path, opts: KittyImageOptions) -> Result<String> {
     let dyn_image =
         image::open(path).with_context(|| format!("failed to open image: {}", path.display()))?;
     let mut png = Vec::new();
-    {
-        let mut cursor = Cursor::new(&mut png);
-        dyn_image
-            .write_to(&mut cursor, ImageFormat::Png)
-            .context("failed to encode image as png")?;
-    }
+    dyn_image
+        .write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
+        .with_context(|| format!("failed to encode image: {}", path.display()))?;
+    render_image_png(&dyn_image, &png, opts)
+}
 
+pub fn render_image_png(
+    dyn_image: &image::DynamicImage,
+    png: &[u8],
+    opts: KittyImageOptions,
+) -> Result<String> {
     let (w, h) = (dyn_image.width(), dyn_image.height());
     let width_cells = opts.max_width_cells.max(1);
     let max_height = opts.max_height_cells.unwrap_or(0);
 
-    let chunks = chunk_bytes(&png, 3 * 1024);
+    let chunks = chunk_bytes(png, 3 * 1024);
     let n_chunks = chunks.len();
     let mut out = String::new();
     for (i, chunk) in chunks.into_iter().enumerate() {

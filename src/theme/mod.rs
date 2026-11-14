@@ -1,5 +1,7 @@
 pub mod builtin;
 
+use std::borrow::Cow;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Color {
     Ansi(u8),
@@ -16,9 +18,9 @@ pub struct Style {
     pub dim: bool,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
-    pub name: &'static str,
+    pub name: Cow<'static, str>,
     pub heading1: Style,
     pub heading2: Style,
     pub heading3: Style,
@@ -36,4 +38,10 @@ pub struct Theme {
     pub table_header: Style,
     pub table_border: Style,
     pub list_marker: Style,
+}
+
+impl Theme {
+    pub fn name_str(&self) -> &str {
+        self.name.as_ref()
+    }
 }

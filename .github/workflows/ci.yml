@@ -31,10 +31,17 @@ jobs:
       - name: Test
         run: cargo test --all --locked
 
+      - name: Smoke test C library
+        run: |
+          cargo build --locked
+          cc -std=c11 -Wall -Wextra -Werror examples/capi.c -I include target/debug/libmdlux.a -lm -lpthread -ldl -o target/debug/mdlux-capi-smoke
+          target/debug/mdlux-capi-smoke > /dev/null
+
       - name: Build static Linux artifact
         run: cargo build --release --locked --target x86_64-unknown-linux-musl
 
-      - name: Verify static Linux binary
+      - name: Verify static CLI and C library
         run: |
           file target/x86_64-unknown-linux-musl/release/mdlux
           file target/x86_64-unknown-linux-musl/release/mdlux | grep -qi "static"
+          file target/x86_64-unknown-linux-musl/release/libmdlux.a

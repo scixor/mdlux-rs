@@ -11,10 +11,10 @@ fn ctx(
     kitty_text_size: bool,
     kitty_graphics: bool,
     no_highlight: bool,
-) -> RenderContext {
+) -> RenderContext<'static> {
     RenderContext {
         width: 72,
-        theme: *find_theme("ansi").expect("theme must exist"),
+        theme: find_theme("ansi").expect("theme must exist").to_owned(),
         capabilities: Capabilities {
             ansi,
             kitty_text_size,
@@ -23,6 +23,13 @@ fn ctx(
         },
         source_dir: PathBuf::from("."),
         no_highlight,
+        code_theme_name: None,
+        media: &[],
+        embed_media: false,
+        cell_width_px: None,
+        cell_height_px: None,
+        max_media_width_cells: None,
+        max_media_height_cells: None,
     }
 }
 

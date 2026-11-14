@@ -1,4 +1,5 @@
 pub mod cli;
+pub mod ffi;
 pub mod highlight;
 pub mod input;
 pub mod kitty;
@@ -8,11 +9,11 @@ pub mod theme;
 pub mod util;
 
 use anyhow::Result;
+use std::path::PathBuf;
 
 use crate::cli::Cli;
 use crate::kitty::detect::detect_capabilities;
-use crate::markdown::parser::parse_markdown;
-use crate::render::{RenderContext, render_document};
+use crate::render::{RenderOptions, render_markdown};
 use crate::theme::builtin::{find_theme, list_theme_names};
 
 pub fn run(cli: Cli) -> Result<()> {
@@ -25,29 +26,27 @@ pub fn run(cli: Cli) -> Result<()> {
 
     let (input, source_path) = input::read_input(cli.file.as_deref())?;
     let source_dir = source_path
-        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
-        .unwrap_or_else(|| std::env::current_dir().unwrap());
-
-    let width = cli
-        .width
-        .unwrap_or_else(|| util::width::terminal_width().unwrap_or(80))
-        .max(20); // if its less than 20 we can't do anything about it : )
+        .and_then(|path| path.parent().map(|path| path.to_path_buf()))
+        .unwrap_or_else(PathBuf::new);
 
     let capabilities = detect_capabilities(&cli);
-    let theme =
-        *find_theme(&cli.theme).ok_or_else(|| anyhow::anyhow!("unknown theme: {}", cli.theme))?;
-
-    let ctx = RenderContext {
-        width,
-        theme,
+    let options = RenderOptions {
+        width: cli
+            .width
+            .unwrap_or_else(|| util::width::terminal_width().unwrap_or(80))
+            .max(20),
+        theme: find_theme(&cli.theme)
+            .cloned()
+            .ok_or_else(|| anyhow::anyhow!("unknown theme: {}", cli.theme))?,
         capabilities,
         source_dir,
         no_highlight: cli.no_highlight,
+        embed_media: capabilities.kitty_graphics,
+        ..RenderOptions::default()
     };
 
-    let blocks = parse_markdown(&input);
-    let output = render_document(&blocks, &ctx)?;
-    print!("{output}");
+    let output = render_markdown(&input, &options)?;
+    print!("{}", output.text);
     Ok(())
 }
 
@@ -59,17 +58,16 @@ mod tests {
     #[test]
     fn renders_basic_text() {
         let test_input = "# Hello\n\nworld\n";
-        let blocks = parse_markdown(test_input);
-        let ctx = RenderContext {
+        let options = RenderOptions {
             width: 80,
-            theme: *find_theme("ansi").unwrap(),
+            theme: find_theme("ansi").unwrap().clone(),
             capabilities: Capabilities::default(),
-            source_dir: std::env::current_dir().unwrap(),
             no_highlight: true,
+            ..RenderOptions::default()
         };
-        let out = render_document(&blocks, &ctx).expect("should render");
-        assert!(out.contains("Hello"));
-        assert!(out.contains("world"));
+        let out = render_markdown(test_input, &options).expect("should render");
+        assert!(out.text.contains("Hello"));
+        assert!(out.text.contains("world"));
     }
 
     #[test]

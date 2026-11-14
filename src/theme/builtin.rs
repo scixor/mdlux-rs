@@ -1,4 +1,5 @@
 use super::{Color, Style, Theme};
+use std::borrow::Cow;
 
 pub fn default_theme_name() -> &'static str {
     "ansi"
@@ -32,7 +33,7 @@ const fn s(fg: Option<Color>, bold: bool, italic: bool, underline: bool, dim: bo
 }
 
 static ANSI: Theme = Theme {
-    name: "ansi",
+    name: Cow::Borrowed("ansi"),
     heading1: s(Some(Color::Ansi(33)), true, false, true, false),
     heading2: s(Some(Color::Ansi(39)), true, false, false, false),
     heading3: s(Some(Color::Ansi(45)), true, false, true, false),
@@ -53,7 +54,7 @@ static ANSI: Theme = Theme {
 };
 
 static DARK: Theme = Theme {
-    name: "dark",
+    name: Cow::Borrowed("dark"),
     heading1: s(Some(Color::Rgb(224, 108, 117)), true, false, true, false),
     heading2: s(Some(Color::Rgb(97, 175, 239)), true, false, false, false),
     heading3: s(Some(Color::Rgb(198, 120, 221)), true, false, true, false),
@@ -74,7 +75,7 @@ static DARK: Theme = Theme {
 };
 
 static LIGHT: Theme = Theme {
-    name: "light",
+    name: Cow::Borrowed("light"),
     heading1: s(Some(Color::Rgb(196, 26, 22)), true, false, true, false),
     heading2: s(Some(Color::Rgb(0, 64, 175)), true, false, false, false),
     heading3: s(Some(Color::Rgb(111, 66, 193)), true, false, true, false),
@@ -95,7 +96,7 @@ static LIGHT: Theme = Theme {
 };
 
 static NORD: Theme = Theme {
-    name: "nord",
+    name: Cow::Borrowed("nord"),
     heading1: s(Some(Color::Rgb(191, 97, 106)), true, false, true, false),
     heading2: s(Some(Color::Rgb(129, 161, 193)), true, false, false, false),
     heading3: s(Some(Color::Rgb(180, 142, 173)), true, false, true, false),
@@ -116,7 +117,7 @@ static NORD: Theme = Theme {
 };
 
 static GRUVBOX: Theme = Theme {
-    name: "gruvbox",
+    name: Cow::Borrowed("gruvbox"),
     heading1: s(Some(Color::Rgb(251, 73, 52)), true, false, true, false),
     heading2: s(Some(Color::Rgb(131, 165, 152)), true, false, false, false),
     heading3: s(Some(Color::Rgb(211, 134, 155)), true, false, true, false),
@@ -137,7 +138,7 @@ static GRUVBOX: Theme = Theme {
 };
 
 static KANAGAWA: Theme = Theme {
-    name: "kanagawa",
+    name: Cow::Borrowed("kanagawa"),
     heading1: s(Some(Color::Rgb(210, 126, 153)), true, false, true, false), // sakuraPink
     heading2: s(Some(Color::Rgb(126, 156, 216)), true, false, false, false), // crystalBlue
     heading3: s(Some(Color::Rgb(152, 187, 108)), true, false, true, false), // springGreen

@@ -48,16 +48,50 @@ jobs:
           file target/${{ matrix.target }}/release/mdlux
           file target/${{ matrix.target }}/release/mdlux | grep -qi "static"
 
-      - name: Package
+      - name: Package CLI
         run: |
           mkdir -p dist
           tar -C target/${{ matrix.target }}/release -czf dist/mdlux-${{ matrix.target }}.tar.gz mdlux
 
-      - name: Upload artifact
+      - name: Package C library
+        run: |
+          mkdir -p dist/mdlux-c-${{ matrix.target }}/include dist/mdlux-c-${{ matrix.target }}/examples dist/mdlux-c-${{ matrix.target }}/cmake
+          cp target/${{ matrix.target }}/release/libmdlux.a dist/mdlux-c-${{ matrix.target }}/
+          cp -R include/. dist/mdlux-c-${{ matrix.target }}/include/
+          cp examples/capi.c dist/mdlux-c-${{ matrix.target }}/examples/
+          cp cmake/mdluxConfig.cmake dist/mdlux-c-${{ matrix.target }}/cmake/
+          cp README.md dist/mdlux-c-${{ matrix.target }}/
+          tar -C dist/mdlux-c-${{ matrix.target }} -czf dist/mdlux-c-${{ matrix.target }}.tar.gz .
+
+      - name: Smoke test C package on Linux
+        if: matrix.static_expected
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools
+          mkdir -p dist/c-smoke
+          tar -C dist/c-smoke -xzf dist/mdlux-c-${{ matrix.target }}.tar.gz
+          musl-gcc dist/c-smoke/examples/capi.c -I dist/c-smoke/include dist/c-smoke/libmdlux.a -lm -lpthread -ldl -o dist/c-smoke/capi
+          dist/c-smoke/capi > /dev/null
+
+      - name: Smoke test C package on macOS
+        if: runner.os == 'macOS'
+        run: |
+          mkdir -p dist/c-smoke
+          tar -C dist/c-smoke -xzf dist/mdlux-c-${{ matrix.target }}.tar.gz
+          cc dist/c-smoke/examples/capi.c -I dist/c-smoke/include dist/c-smoke/libmdlux.a -framework Security -framework CoreFoundation -o dist/c-smoke/capi
+          dist/c-smoke/capi > /dev/null
+
+      - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
           name: mdlux-${{ matrix.target }}
           path: dist/mdlux-${{ matrix.target }}.tar.gz
+
+      - name: Upload C library artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdlux-c-${{ matrix.target }}
+          path: dist/mdlux-c-${{ matrix.target }}.tar.gz
 
   release:
     needs: build

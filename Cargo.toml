@@ -1,3 +1,6 @@
+[lib]
+crate-type = ["rlib", "staticlib"]
+
 [package]
 name = "mdlux"
 version = "0.0.4"
