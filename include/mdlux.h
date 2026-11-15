@@ -21,6 +21,12 @@ enum mdlux_media_kind {
   MDLUX_MEDIA_UNKNOWN = 3
 };
 
+enum mdlux_display_mode {
+  MDLUX_DISPLAY_AUTO = 0,
+  MDLUX_DISPLAY_INLINE = 1,
+  MDLUX_DISPLAY_BLOCK = 2
+};
+
 enum mdlux_status {
   MDLUX_OK = 0,
   MDLUX_ERROR_ARGUMENT = 1,
@@ -94,6 +100,7 @@ typedef struct mdlux_media_resolution {
   size_t bytes_len;
   uint32_t width_cells;
   uint32_t height_cells;
+  uint8_t display_mode;
 } mdlux_media_resolution;
 
 typedef struct mdlux_media_request {

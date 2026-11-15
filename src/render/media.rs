@@ -22,6 +22,14 @@ pub struct MediaRequest {
     pub kind: MediaKind,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum MediaDisplayMode {
+    #[default]
+    Auto,
+    Inline,
+    Block,
+}
+
 #[derive(Debug, Clone, Default)]
 pub struct MediaResolution {
     pub source: String,
@@ -29,6 +37,7 @@ pub struct MediaResolution {
     pub bytes: Option<Vec<u8>>,
     pub width_cells: Option<u32>,
     pub height_cells: Option<u32>,
+    pub display_mode: MediaDisplayMode,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

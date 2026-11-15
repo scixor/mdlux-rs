@@ -14,9 +14,9 @@ use crate::markdown::ast::Block;
 use crate::theme::Theme;
 
 pub use media::{
-    MediaImageInput, MediaKind, MediaRequest, MediaResolution, MediaSlot, extract_media_requests,
-    find_resolution, image_input, load_image, media_kind_from_link, prepare_image,
-    requests_without_resolutions,
+    MediaDisplayMode, MediaImageInput, MediaKind, MediaRequest, MediaResolution, MediaSlot,
+    extract_media_requests, find_resolution, image_input, load_image, media_kind_from_link,
+    prepare_image, requests_without_resolutions,
 };
 
 #[derive(Debug, Clone, Copy, Default)]

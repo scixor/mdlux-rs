@@ -122,9 +122,13 @@ pub fn render_block(
             out.push('\n');
         }
         Block::Image { alt, path, .. } => {
+            let is_inline = find_resolution(ctx.media, path)
+                .is_some_and(|r| r.display_mode == crate::render::media::MediaDisplayMode::Inline);
             render_image_block(alt, path, ctx, state, out)?;
             out.push('\n');
-            out.push('\n');
+            if !is_inline {
+                out.push('\n');
+            }
         }
     }
     Ok(())
@@ -472,6 +476,12 @@ fn render_image_block(
     state: &mut RenderState,
     out: &mut String,
 ) -> Result<()> {
+    let resolution = find_resolution(ctx.media, path);
+    if resolution.is_some_and(|r| r.display_mode == crate::render::media::MediaDisplayMode::Inline) {
+        out.push_str(&format!("[{alt}]"));
+        return Ok(());
+    }
+
     let fallback = |out: &mut String| out.push_str(&format!("[image: {alt} - {path}]"));
 
     if !ctx.capabilities.kitty_graphics {

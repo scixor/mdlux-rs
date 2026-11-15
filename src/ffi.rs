@@ -97,6 +97,7 @@ pub struct mdlux_media_resolution {
     pub bytes_len: usize,
     pub width_cells: c_uint,
     pub height_cells: c_uint,
+    pub display_mode: u8,
 }
 
 #[repr(C)]
@@ -270,6 +271,11 @@ unsafe fn media_from_c(
         let source = std::str::from_utf8(source_bytes)
             .map_err(|_| MDLUX_ERROR_INVALID_UTF8)?
             .to_string();
+        let display_mode = match item.display_mode {
+            1 => crate::render::media::MediaDisplayMode::Inline,
+            2 => crate::render::media::MediaDisplayMode::Block,
+            _ => crate::render::media::MediaDisplayMode::Auto,
+        };
         result.push(MediaResolution {
             source,
             path: optional_cstr(item.path).map(PathBuf::from),
@@ -280,6 +286,7 @@ unsafe fn media_from_c(
             },
             width_cells: (item.width_cells != 0).then_some(item.width_cells),
             height_cells: (item.height_cells != 0).then_some(item.height_cells),
+            display_mode,
         });
     }
     Ok(result)
