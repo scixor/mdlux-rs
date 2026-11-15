@@ -36,7 +36,7 @@ See `include/mdlux.h` and `examples/capi.c`. The C entry point returns the rende
 
 1. Call `mdlux_render` once with an empty media array.
 2. Read `output.requests` for URLs/resources. mdlux returns requests for images and
-   media-like links; ordinary links remain links.
+   media-like links. Ordinary links remain links.
 3. Fetch, authenticate, cache, and classify those resources in the host application.
 4. Call `mdlux_render` again with matching `mdlux_media_resolution` entries.
 5. For images, mdlux can insert Kitty graphics (`embed_media=1`) or reserve cells and return

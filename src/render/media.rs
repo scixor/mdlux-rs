@@ -354,8 +354,12 @@ pub fn image_input<'a>(
 
 pub fn load_image(input: MediaImageInput<'_>) -> Result<image::DynamicImage> {
     match input {
-        MediaImageInput::Path(path) => image::open(path.as_ref()),
-        MediaImageInput::Bytes(bytes) => image::load_from_memory(bytes),
+        MediaImageInput::Path(path) => image::ImageReader::open(path.as_ref())?
+            .with_guessed_format()?
+            .decode(),
+        MediaImageInput::Bytes(bytes) => image::ImageReader::new(std::io::Cursor::new(bytes))
+            .with_guessed_format()?
+            .decode(),
     }
     .map_err(|error| anyhow::anyhow!("failed to load media: {error}"))
 }

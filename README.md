@@ -8,6 +8,7 @@ Some basic features:
 - Kitty enhancements (text sizing and images)
 - Common inline/block HTML conversion (not full browser HTML/CSS)
 - Kitty/table image rendering with media metadata
+- Usable as a Rust, C, C++, or Zig library for TUIs and terminal tools
 - Some themes (built-ins can be cloned and restyled through the library)
 
 What it doesn't support atm:
@@ -34,6 +35,32 @@ eget scixor/mdlux-rs --asset x86_64-unknown-linux-musl
 # macOS (Apple Silicon):
 eget scixor/mdlux-rs --asset aarch64-apple-darwin
 ```
+
+## Zig
+
+Use `zig fetch --save=mdlux https://github.com/scixor/mdlux-rs/archive/refs/heads/master.tar.gz` in your project's `build.zig.zon` to install the wrapper.
+Then add `mdlux` to your Zig build and link against the package. See `examples/zig` for a smoke app.
+
+## Library use
+
+mdlux is both a CLI and a Markdown-rendering library. The easiest render path is the small UTF-8 API:
+
+```rust
+use mdlux::{
+    render::{render_markdown, RenderOptions},
+    Capabilities,
+};
+
+let markdown = "# Hello\n\nSome *text* and `code`.\n";
+let options = RenderOptions {
+    width: 80,
+    ..RenderOptions::default()
+};
+let output = mdlux::render::render_markdown(markdown, &options)?;
+println!("{}", output.text);
+```
+
+If you need the same renderer from C, C++, or Zig, use the small C ABI instead. See the [C API guide](docs/c-api.md).
 
 ## Usage
 
