@@ -50,7 +50,7 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run package tests");
     test_step.dependOn(&run_tests.step);
-    test_step.dependOn(&cargo.step);
+    tests.step.dependOn(&cargo.step);
 }
 
 fn linkSystemLibraries(module: *std.Build.Module, target: std.Target) void {
