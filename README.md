@@ -206,6 +206,12 @@ From an extracted C release archive, the library is at the archive root:
 gcc app.c -I include libmdlux.a -lm -lpthread -ldl
 ```
 
+For the `x86_64-unknown-linux-musl` archive, use Zig 0.17 to supply the musl-compatible unwind runtime:
+
+```bash
+zig cc -target x86_64-linux-musl app.c -I include libmdlux.a -lm -lpthread -ldl -lunwind
+```
+
 A CMake helper is available:
 
 ```cmake

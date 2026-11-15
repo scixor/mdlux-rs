@@ -39,6 +39,12 @@ jobs:
       - name: Cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Setup Zig for musl C linking
+        if: matrix.static_expected
+        uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.17.0
+
       - name: Build
         run: cargo build --release --locked --target ${{ matrix.target }}
 
@@ -66,11 +72,9 @@ jobs:
       - name: Smoke test C package on Linux
         if: matrix.static_expected
         run: |
-          sudo apt-get update
-          sudo apt-get install -y musl-tools
           mkdir -p dist/c-smoke
           tar -C dist/c-smoke -xzf dist/mdlux-c-${{ matrix.target }}.tar.gz
-          musl-gcc dist/c-smoke/examples/capi.c -I dist/c-smoke/include dist/c-smoke/libmdlux.a -lm -lpthread -ldl -o dist/c-smoke/capi
+          zig cc -target x86_64-linux-musl dist/c-smoke/examples/capi.c -I dist/c-smoke/include dist/c-smoke/libmdlux.a -lm -lpthread -ldl -lunwind -o dist/c-smoke/capi
           dist/c-smoke/capi > /dev/null
 
       - name: Smoke test C package on macOS
