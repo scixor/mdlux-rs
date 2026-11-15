@@ -5,7 +5,7 @@
 #include <vector>
 
 int main() {
-    const char *source = "# Hello\n\nSome *text* and ![fat cat 1](examples/assets/cat-1.webp) ![fat cat 2](examples/assets/cat-2.webp) ![fat cat 3](examples/assets/cat-3.webp).\n";
+    const char *source = "# Hello\n\nSome *text* and ![fat cat 1](examples/assets/cat-1.webp) ![fat cat 2](examples/assets/cat-2.webp) ![fat cat 3](examples/assets/cat-3.webp).\n\n![Neko](examples/assets/neko.gif)\n";
     mdlux_options options{};
     options.width_cells = 80;
     options.theme_name = "dark";
@@ -25,6 +25,7 @@ int main() {
         "examples/assets/cat-1.webp",
         "examples/assets/cat-2.webp",
         "examples/assets/cat-3.webp",
+        "examples/assets/neko.gif",
     };
 
     std::vector<std::vector<uint8_t>> bytes;

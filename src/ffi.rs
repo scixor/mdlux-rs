@@ -1,6 +1,6 @@
 #![allow(clippy::missing_safety_doc, unsafe_op_in_unsafe_fn)]
 
-use std::alloc::{Layout, alloc, dealloc};
+use std::alloc::{Layout, dealloc};
 use std::borrow::Cow;
 use std::ffi::{CStr, CString};
 use std::os::raw::{c_char, c_int, c_uint};
@@ -307,17 +307,11 @@ fn string_to_c(value: &str) -> Result<*mut c_char, c_int> {
         .map_err(|_| MDLUX_ERROR_ALLOCATION)
 }
 
-fn allocate_bytes(bytes: &[u8]) -> *mut u8 {
+fn allocate_bytes(bytes: String) -> *mut u8 {
     if bytes.is_empty() {
-        return ptr::null_mut();
-    }
-    unsafe {
-        let layout = Layout::from_size_align(bytes.len(), 1).expect("valid byte allocation");
-        let pointer = alloc(layout);
-        if !pointer.is_null() {
-            ptr::copy_nonoverlapping(bytes.as_ptr(), pointer, bytes.len());
-        }
-        pointer
+        ptr::null_mut()
+    } else {
+        Box::<[u8]>::into_raw(bytes.into_bytes().into_boxed_slice()).cast()
     }
 }
 
@@ -381,8 +375,9 @@ fn render_inner(
 }
 
 fn output_to_c(output: RenderOutput) -> Result<mdlux_output, c_int> {
-    let bytes = allocate_bytes(output.text.as_bytes());
-    if !output.text.is_empty() && bytes.is_null() {
+    let text_len = output.text.len();
+    let bytes = allocate_bytes(output.text);
+    if text_len > 0 && bytes.is_null() {
         return Err(MDLUX_ERROR_ALLOCATION);
     }
 
@@ -413,7 +408,7 @@ fn output_to_c(output: RenderOutput) -> Result<mdlux_output, c_int> {
         });
     }
 
-    if bytes.is_null() && !output.text.is_empty() {
+    if bytes.is_null() && text_len > 0 {
         // Unreachable because allocate_bytes above guards it, but keeps cleanup simple.
         return Err(MDLUX_ERROR_ALLOCATION);
     }
@@ -422,7 +417,7 @@ fn output_to_c(output: RenderOutput) -> Result<mdlux_output, c_int> {
     let request_count = requests.len();
     Ok(mdlux_output {
         bytes,
-        bytes_len: output.text.len(),
+        bytes_len: text_len,
         line_count: output.line_count as c_uint,
         slots: if slots.is_empty() {
             ptr::null_mut()
@@ -610,6 +605,51 @@ mod tests {
         })
         .expect("UTF-8 output");
         assert!(rendered.contains("Custom"));
+        unsafe { mdlux_output_free(&mut output) };
+    }
+
+    #[test]
+    fn animated_gif_flows_through_c_abi() {
+        let source = b"![Neko](x.gif)";
+        let media_source = c"x.gif";
+        let gif = include_bytes!("../examples/assets/neko.gif");
+        let media = mdlux_media_resolution {
+            source: media_source.as_ptr(),
+            source_len: 5,
+            path: ptr::null(),
+            bytes: gif.as_ptr(),
+            bytes_len: gif.len(),
+            width_cells: 0,
+            height_cells: 0,
+            display_mode: 0,
+        };
+        let mut options: mdlux_options = unsafe { std::mem::zeroed() };
+        options.width_cells = 80;
+        options.theme_name = c"nord".as_ptr();
+        options.source_dir = c".".as_ptr();
+        options.kitty_graphics = 1;
+        options.embed_media = 1;
+        options.cell_width_px = 8;
+        options.cell_height_px = 16;
+
+        let mut output: mdlux_output = unsafe { std::mem::zeroed() };
+        let status = unsafe {
+            mdlux_render(
+                source.as_ptr(),
+                source.len(),
+                &options,
+                &media,
+                1,
+                &mut output,
+            )
+        };
+        assert_eq!(status, MDLUX_OK);
+        let rendered = String::from_utf8_lossy(unsafe {
+            std::slice::from_raw_parts(output.bytes, output.bytes_len)
+        });
+        assert!(rendered.contains("a=f"));
+        assert!(rendered.contains("X=1"));
+        assert!(rendered.contains("s=3,v=1"));
         unsafe { mdlux_output_free(&mut output) };
     }
 

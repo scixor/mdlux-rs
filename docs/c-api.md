@@ -42,5 +42,9 @@ See `include/mdlux.h` and `examples/capi.c`. The C entry point returns the rende
 5. For images, mdlux can insert Kitty graphics (`embed_media=1`) or reserve cells and return
    placement metadata (`embed_media=0`).
 
+Animated GIFs use the same flow: set `kitty_graphics=1` and `embed_media=1`, supply the GIF
+through `path` or `bytes`, then write `output.bytes` to the terminal. With `embed_media=0`,
+the host handles animation decoding and rendering.
+
 mdlux performs no downloads or playback. Hosts own network security, caching, authentication,
 thumbnails, video/audio playback, and cursor/screen placement.

@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::process::Command;
 
 use mdlux::markdown::ast::{Block, Inline};
@@ -64,12 +65,47 @@ fn cli_images_work_without_host_supplied_cell_metrics() {
         .arg("always")
         .arg("--text-size")
         .arg("never")
-        .arg(markdown)
+        .arg(&markdown)
         .output()
         .unwrap();
     assert!(output.status.success());
     let text = String::from_utf8(output.stdout).unwrap();
     assert!(text.contains("\u{1b}_G"), "expected Kitty image: {text:?}");
+
+    let gif = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("examples/assets/neko.gif");
+    std::fs::write(&markdown, format!("![neko]({})\n", gif.display())).unwrap();
+    let output = Command::new(env!("CARGO_BIN_EXE_mdlux"))
+        .arg("--images")
+        .arg("always")
+        .arg("--text-size")
+        .arg("never")
+        .arg(&markdown)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        text.contains("a=f"),
+        "expected GIF animation frames: {text:?}"
+    );
+    assert!(
+        text.contains("s=3,v=1"),
+        "expected looping playback: {text:?}"
+    );
+}
+
+#[test]
+fn gif_bytes_emit_animation_frames_and_delays() {
+    let mut options = media_options();
+    options.embed_media = true;
+    options.media[0].source = "x.gif".to_string();
+    options.media[0].bytes = Some(include_bytes!("../examples/assets/neko.gif").to_vec());
+
+    let output = render_markdown("![alt](x.gif)", &options).unwrap();
+    assert!(output.text.contains("a=f"));
+    assert!(output.text.contains("r=1,z="));
+    assert!(output.text.contains("s=3,v=1"));
+    assert_eq!(output.media_slots.len(), 1);
 }
 
 #[test]

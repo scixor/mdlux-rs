@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use mdlux::kitty::graphics::{KittyImageOptions, render_image};
 use mdlux::markdown::parser::parse_markdown;
@@ -115,6 +115,18 @@ fn kitty_image_encoder_envelope() {
     assert!(seq.starts_with("\u{1b}_G"), "must start with kitty APC");
     assert!(seq.contains("f=100"), "must include png format tag");
     assert!(seq.ends_with("\u{1b}\\"), "must end with ST");
+
+    let gif = Path::new(env!("CARGO_MANIFEST_DIR")).join("examples/assets/neko.gif");
+    let seq = render_image(
+        &gif,
+        KittyImageOptions {
+            max_width_cells: 20,
+            max_height_cells: None,
+        },
+    )
+    .expect("kitty GIF render");
+    assert!(seq.contains("a=f"));
+    assert!(seq.contains("s=3,v=1"));
 }
 
 #[test]

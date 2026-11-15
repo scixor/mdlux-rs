@@ -2,18 +2,17 @@
 
 Terminal Markdown renderer which I made for myself because I didn't find others adequate.	ᕕ(⌐■_■)ᕗ ♪♬
 
+![mdlux - Markdown beautifully rendered in your terminal](./img/hero.png)
+
 Some basic features:
 - plain text (just convert it to simple text without styling, quite useful sometimes)
 - ANSI styling (for anything other than kitty)
-- Kitty enhancements (text sizing and images)
+- Kitty enhancements (text sizing and images, including animated GIFs)
 - Common inline/block HTML conversion (not full browser HTML/CSS)
+- GitHub-style callout labels (`[!NOTE]`, `[!TIP]`, and friends)
 - Kitty/table image rendering with media metadata
 - Usable as a Rust, C, C++, or Zig library for TUIs and terminal tools
 - Some themes (built-ins can be cloned and restyled through the library)
-
-What it doesn't support atm:
-- callouts (i do plan to support this)
-- tons of other things which I don't use a lot
 
 ## Install
 
@@ -90,121 +89,34 @@ mdlux --text-size never --images auto README.md
 --list-themes
 ```
 
-### Basic styling
-> Theme: **ANSI**
+## See it in action
 
-```md
-# mdlux showcase
+### Syntax highlighting
 
-Welcome to a markdown stress test for `mdlux`.
+Language-aware colors for fenced code blocks, with themes that keep source readable.
 
-> This file is intentionally varied so you can quickly eyeball formatting, wrapping, links, code highlighting, and tables.
+![Rust and Zig syntax highlighting with the Nord theme](./img/syntax.png)
 
----
+### Inline HTML and animated GIFs
 
-## Inline styles
+Common inline and block HTML becomes terminal-native Markdown structure. Kitty graphics
+supports images and animated GIFs, including frame delays and looping.
 
-Normal text, *italic text*, **bold text**, and `inline code` all in one line.
+![HTML source rendered by mdlux with an animated Neko GIF](./img/html-media.gif)
 
-You can also combine things like **bold with `inline code`** and links like [Rust](https://www.rust-lang.org/).
+### Tables, quotes, and document structure
 
-## Lists and nesting
+Markdown structure survives the trip to your terminal. Use plain text for pipelines,
+ANSI styling anywhere, and Kitty enhancements where supported.
 
-- Unordered item one
-- Unordered item two with a long sentence to test line wrapping behavior when terminal width gets narrower than expected.
-- Unordered item three
+![Tables, quotes, lists, and links with the Kanagawa theme](./img/structure.png)
 
-1. Ordered item one
-2. Ordered item two
-3. Ordered item three
+## Thanks
 
-## Blockquote
+These Rust libraries do much of the heavy lifting:
 
-> Markdown in terminals is nicest when structure survives: headings, quotes, bullets, and code should all remain readable.
-
-```
-
-![Basic styling - theme ansi](./img/ansi.png)
-
-### Code
-
-> Theme: Nord
-
-````md
-## Code: Rust
-
-```rust
-use std::collections::HashMap;
-
-fn word_count(input: &str) -> HashMap<String, usize> {
-    let mut counts = HashMap::new();
-    for word in input.split_whitespace() {
-        let key = word.to_lowercase();
-        *counts.entry(key).or_insert(0) += 1;
-    }
-    counts
-}
-
-fn main() {
-    let sample = "Rust rust RUST and markdown";
-    let counts = word_count(sample);
-    println!("{counts:#?}");
-}
-```
-
-## Code: Zig
-
-```zig
-const std = @import("std");
-
-pub fn main() !void {
-    const stdout = std.io.getStdOut().writer();
-    const nums = [_]i32{ 1, 2, 3, 4, 5 };
-
-    var sum: i32 = 0;
-    for (nums) |n| sum += n;
-
-    try stdout.print("sum = {d}\n", .{sum});
-}
-```
-````
-
-![Code example - theme nord](./img/nord.png)
-
-**Bonus**:
-
-> Theme: Kanagawa
-````md
-## Code: Bash
-
-```bash
-#!/usr/bin/env bash
-set -euo pipefail
-
-for file in *.md; do
-  printf "Checking %s\n" "$file"
-done
-
-echo "Done"
-```
-
-## Table
-
-| Feature | Plain | ANSI | Kitty |
-|---|---:|---:|---:|
-| Headings | yes | yes | yes |
-| Syntax highlighting | no | yes | yes |
-| Image rendering | no | no | yes |
-| Text sizing | no | no | yes |
-
-## Links and references
-
-- Project repo style docs: [README](./README.md)
-- Theme test target: `--theme kanagawa`
-- Another theme test target: `--theme nord`
-
-````
-
-
-![Bonus - theme kanagawa](./img/kanagawa.png)
-
+- [pulldown-cmark](https://github.com/raphlinus/pulldown-cmark) for CommonMark/GFM parsing
+- [html-to-markdown-rs](https://github.com/xberg-io/html-to-markdown) for HTML conversion
+- [syntect](https://github.com/trishume/syntect) for syntax highlighting
+- [image](https://github.com/image-rs/image) for image and GIF decoding
+- [clap](https://github.com/clap-rs/clap) for the command-line interface

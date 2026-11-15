@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use crate::kitty::graphics::{KittyImageOptions, render_image_png};
+use crate::kitty::graphics::{KittyImageOptions, decode_gif, render_gif_frames, render_image_png};
 use crate::markdown::ast::{Block, Inline};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +62,30 @@ pub struct PreparedImage {
 pub enum MediaImageInput<'a> {
     Path(std::borrow::Cow<'a, Path>),
     Bytes(&'a [u8]),
+}
+
+pub(crate) enum LoadedImage {
+    Static(image::DynamicImage),
+    Animated {
+        frames: Vec<image::Frame>,
+        loops: u32,
+    },
+}
+
+impl LoadedImage {
+    pub fn width(&self) -> u32 {
+        match self {
+            Self::Static(image) => image.width(),
+            Self::Animated { frames, .. } => frames[0].buffer().width(),
+        }
+    }
+
+    pub fn height(&self) -> u32 {
+        match self {
+            Self::Static(image) => image.height(),
+            Self::Animated { frames, .. } => frames[0].buffer().height(),
+        }
+    }
 }
 
 pub fn extract_media_requests(blocks: &[Block]) -> Vec<MediaRequest> {
@@ -275,6 +299,51 @@ pub(crate) fn encode_image(
     Ok(sequence)
 }
 
+pub(crate) fn encode_loaded_image(
+    image: &LoadedImage,
+    width_cells: u32,
+    height_cells: Option<u32>,
+) -> Result<String> {
+    let options = KittyImageOptions {
+        max_width_cells: width_cells.min(u16::MAX as u32) as u16,
+        max_height_cells: height_cells.map(|height| height.min(u16::MAX as u32) as u16),
+    };
+    match image {
+        LoadedImage::Static(image) => encode_image(image, width_cells, height_cells),
+        LoadedImage::Animated { frames, loops } => render_gif_frames(frames, *loops, options),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn prepare_loaded_image(
+    image: &LoadedImage,
+    width: usize,
+    max_width_cells: Option<u32>,
+    max_height_cells: Option<u32>,
+    cell_width_px: Option<u32>,
+    cell_height_px: Option<u32>,
+    override_width: Option<u32>,
+    override_height: Option<u32>,
+) -> Result<PreparedImage> {
+    let (width_cells, height_cells) = measure_image(
+        image.width(),
+        image.height(),
+        width,
+        max_width_cells,
+        max_height_cells,
+        cell_width_px,
+        cell_height_px,
+        override_width,
+        override_height,
+    )?;
+    let sequence = encode_loaded_image(image, width_cells, Some(height_cells))?;
+    Ok(PreparedImage {
+        sequence,
+        width_cells,
+        height_cells,
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 fn size_cells(
     image_width: u32,
@@ -353,15 +422,36 @@ pub fn image_input<'a>(
 }
 
 pub fn load_image(input: MediaImageInput<'_>) -> Result<image::DynamicImage> {
-    match input {
-        MediaImageInput::Path(path) => image::ImageReader::open(path.as_ref())?
-            .with_guessed_format()?
-            .decode(),
-        MediaImageInput::Bytes(bytes) => image::ImageReader::new(std::io::Cursor::new(bytes))
-            .with_guessed_format()?
-            .decode(),
-    }
-    .map_err(|error| anyhow::anyhow!("failed to load media: {error}"))
+    Ok(match load_image_with_animation(input)? {
+        LoadedImage::Static(image) => image,
+        LoadedImage::Animated { frames, .. } => image::DynamicImage::ImageRgba8(
+            frames
+                .into_iter()
+                .next()
+                .expect("animated GIF has a first frame")
+                .into_buffer(),
+        ),
+    })
+}
+
+pub(crate) fn load_image_with_animation(input: MediaImageInput<'_>) -> Result<LoadedImage> {
+    let result = (|| -> Result<LoadedImage> {
+        let bytes = match input {
+            MediaImageInput::Path(path) => std::borrow::Cow::Owned(std::fs::read(path)?),
+            MediaImageInput::Bytes(bytes) => std::borrow::Cow::Borrowed(bytes),
+        };
+        let format = image::guess_format(bytes.as_ref())?;
+        if format == image::ImageFormat::Gif {
+            let (frames, loops) = decode_gif(bytes.as_ref())?;
+            if frames.is_empty() {
+                anyhow::bail!("GIF has no frames");
+            }
+            return Ok(LoadedImage::Animated { frames, loops });
+        }
+        let image = image::load_from_memory_with_format(bytes.as_ref(), format)?;
+        Ok(LoadedImage::Static(image))
+    })();
+    result.map_err(|error| anyhow::anyhow!("failed to load media: {error}"))
 }
 
 pub fn requests_without_resolutions(

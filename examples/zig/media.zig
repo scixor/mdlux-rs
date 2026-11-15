@@ -1,4 +1,4 @@
-//! Two-pass mdllx tour: render for media requests, then resolve and render again.
+//! Two-pass mdlux tour with static images and an animated GIF: render for media requests, then resolve and render again.
 
 const std = @import("std");
 
@@ -13,8 +13,9 @@ pub fn main(init: std.process.Init) !void {
         "examples/assets/cat-1.webp",
         "examples/assets/cat-2.webp",
         "examples/assets/cat-3.webp",
+        "examples/assets/neko.gif",
     };
-    const source = "# Hello\n\nSome *text* and ![fat cat 1](examples/assets/cat-1.webp) ![fat cat 2](examples/assets/cat-2.webp) ![fat cat 3](examples/assets/cat-3.webp).\n";
+    const source = "# Hello\n\nSome *text* and ![fat cat 1](examples/assets/cat-1.webp) ![fat cat 2](examples/assets/cat-2.webp) ![fat cat 3](examples/assets/cat-3.webp).\n\n![Neko](examples/assets/neko.gif)\n";
 
     // Pass 1: render without media, so the host can inspect unresolved requests.
     var first_options = std.mem.zeroes(mdlux.Options);
@@ -22,9 +23,7 @@ pub fn main(init: std.process.Init) !void {
     first_options.theme_name = "dark";
     first_options.source_dir = ".";
 
-    var first = std.mem.zeroes(mdlux.Output);
-    const first_status = mdlux.renderMarkdown(source, &first_options);
-    if (first_status != mdlux.MDLUX_OK) return error.RenderFailed;
+    var first = mdlux.renderMarkdown(source, &first_options) catch return error.RenderFailed;
     defer mdlux.outputFree(&first);
     std.debug.print("requests: {d}\n", .{first.request_count});
 
@@ -42,6 +41,7 @@ pub fn main(init: std.process.Init) !void {
         media[i].height_cells = 0;
         media[i].display_mode = 0;
     }
+    defer for (bytes) |buffer| gpa.free(buffer);
 
     var second_options = std.mem.zeroes(mdlux.Options);
     second_options.width_cells = 80;
@@ -54,14 +54,12 @@ pub fn main(init: std.process.Init) !void {
     second_options.max_media_width_cells = 4;
     second_options.max_media_height_cells = 4;
 
-    var second = std.mem.zeroes(mdlux.Output);
-    const second_status = mdlux_render(source, source.len, &second_options, @ptrCast(&media), media.len, &second);
-    if (second_status != mdlux.MDLUX_OK) return error.RenderFailed;
+    var second = mdlux.renderMarkdownWithMedia(source, &second_options, &media) catch return error.RenderFailed;
+    defer mdlux.outputFree(&second);
     var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
     const bytes_ = second.bytes orelse return error.NoBytes;
     try stdout.writeAll(bytes_[0..second.bytes_len]);
     try stdout.writeAll("\n");
     try stdout.flush();
-    mdlux.outputFree(&second);
 }

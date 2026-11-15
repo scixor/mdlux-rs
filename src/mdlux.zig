@@ -126,8 +126,17 @@ pub extern "C" fn mdlux_theme_builtin(
 pub extern "C" fn mdlux_version() callconv(.c) u32;
 
 pub fn renderMarkdown(source: []const u8, options: *const Options) !Output {
+    return renderMarkdownWithMedia(source, options, &[_]MediaResolution{});
+}
+
+pub fn renderMarkdownWithMedia(
+    source: []const u8,
+    options: *const Options,
+    media: []const MediaResolution,
+) !Output {
     var output = std.mem.zeroes(Output);
-    const status = mdlux_render(source.ptr, source.len, options, null, 0, &output);
+    const media_ptr = if (media.len == 0) null else &media[0];
+    const status = mdlux_render(source.ptr, source.len, options, media_ptr, media.len, &output);
     return if (status == MDLUX_OK) output else error.MdluxRender;
 }
 

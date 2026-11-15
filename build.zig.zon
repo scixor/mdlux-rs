@@ -1,6 +1,6 @@
 .{
     .name = .mdlux,
-    .version = "0.1.2",
+    .version = "0.1.3",
     .fingerprint = 0x5e9f624c9a9a50f2,
     .minimum_zig_version = "0.18.0-dev.1124+2ecf4b5e2",
     .paths = .{

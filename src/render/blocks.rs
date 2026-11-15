@@ -5,8 +5,8 @@ use crate::markdown::ast::{Block, Inline};
 
 use crate::render::RenderContext;
 use crate::render::media::{
-    MediaKind, MediaSlot, PreparedImage, encode_image, find_resolution, image_input, load_image,
-    measure_image, prepare_image,
+    MediaKind, MediaSlot, PreparedImage, encode_loaded_image, find_resolution, image_input,
+    load_image_with_animation, measure_image, prepare_loaded_image,
 };
 
 use super::ansi::apply_style;
@@ -179,9 +179,9 @@ fn prepare_media_image(path: &str, ctx: &RenderContext<'_>) -> Result<Option<Pre
         let Some(input) = image_input(path, &ctx.source_dir, ctx.media) else {
             return Ok(None);
         };
-        let image = load_image(input)?;
+        let image = load_image_with_animation(input)?;
         let prepared = if ctx.embed_media {
-            prepare_image(
+            prepare_loaded_image(
                 &image,
                 ctx.width,
                 ctx.max_media_width_cells,
@@ -500,7 +500,7 @@ fn render_image_block(
             fallback(out);
             return Ok(());
         };
-        match load_image(input) {
+        match load_image_with_animation(input) {
             Ok(image) => {
                 let width = ctx
                     .max_media_width_cells
@@ -508,7 +508,7 @@ fn render_image_block(
                     .unwrap_or(ctx.width)
                     .min(ctx.width)
                     .clamp(1, 80) as u32;
-                out.push_str(&encode_image(&image, width, None)?);
+                out.push_str(&encode_loaded_image(&image, width, None)?);
                 if !alt.trim().is_empty() {
                     out.push('\n');
                     out.push_str(alt);

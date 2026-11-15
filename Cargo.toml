@@ -3,7 +3,7 @@ crate-type = ["rlib", "staticlib"]
 
 [package]
 name = "mdlux"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2024"
 description = "Terminal-first Markdown renderer with ANSI and Kitty enhancements"
 license = "MIT"

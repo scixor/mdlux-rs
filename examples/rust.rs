@@ -1,17 +1,18 @@
 use mdlux::render::{MediaResolution, RenderOptions};
-// Full tour: render text, inspect media requests, then resolve three locally downloaded fat cat stickers.
+// Full tour: render text, inspect media requests, then resolve three locally downloaded fat cat stickers and an animated GIF.
 // Run with: cargo run --example rust
 
-const SOURCES: [&str; 3] = [
+const SOURCES: [&str; 4] = [
     "examples/assets/cat-1.webp",
     "examples/assets/cat-2.webp",
     "examples/assets/cat-3.webp",
+    "examples/assets/neko.gif",
 ];
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let source = format!(
-        "# Hello\n\nSome *text* and ![fat cat 1]({}) ![fat cat 2]({}) ![fat cat 3]({}).\n",
-        SOURCES[0], SOURCES[1], SOURCES[2]
+        "# Hello\n\nSome *text* and ![fat cat 1]({}) ![fat cat 2]({}) ![fat cat 3]({}).\n\n![Neko]({})\n",
+        SOURCES[0], SOURCES[1], SOURCES[2], SOURCES[3]
     );
 
     // Pass 1: render without media, so the host sees unresolved media requests.
