@@ -28,6 +28,9 @@ pub struct Cli {
     pub images: FeatureMode,
 
     #[arg(long)]
+    pub no_remote_images: bool,
+
+    #[arg(long)]
     pub no_highlight: bool,
 
     #[arg(long)]

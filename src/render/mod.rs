@@ -107,7 +107,10 @@ impl<'options> From<&'options RenderOptions> for RenderContext<'options> {
 }
 
 pub fn render_markdown(source: &str, options: &RenderOptions) -> Result<RenderOutput> {
-    let blocks = crate::markdown::parser::parse_markdown(source);
+    render_parsed(&crate::markdown::parser::parse_markdown(source), options)
+}
+
+pub fn render_parsed(blocks: &[Block], options: &RenderOptions) -> Result<RenderOutput> {
     let ctx = RenderContext::from(options);
     let mut state = blocks::RenderState {
         highlighter: (ctx.capabilities.ansi && !ctx.no_highlight).then(|| {
@@ -120,14 +123,14 @@ pub fn render_markdown(source: &str, options: &RenderOptions) -> Result<RenderOu
         media_slots: Vec::new(),
     };
     let mut out = String::new();
-    for block in &blocks {
+    for block in blocks {
         blocks::render_block(block, &ctx, &mut state, &mut out)?;
     }
 
     Ok(RenderOutput {
         line_count: out.lines().count(),
         media_slots: state.media_slots,
-        media_requests: requests_without_resolutions(&blocks, ctx.media),
+        media_requests: requests_without_resolutions(blocks, ctx.media),
         text: out,
     })
 }

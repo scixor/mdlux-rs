@@ -4,6 +4,7 @@ pub mod highlight;
 pub mod input;
 pub mod kitty;
 pub mod markdown;
+mod remote;
 pub mod render;
 pub mod theme;
 pub mod util;
@@ -13,7 +14,7 @@ use std::path::PathBuf;
 
 use crate::cli::Cli;
 use crate::kitty::detect::detect_capabilities;
-use crate::render::{RenderOptions, render_markdown};
+use crate::render::{RenderOptions, render_parsed};
 use crate::theme::builtin::{find_theme, list_theme_names};
 
 pub fn run(cli: Cli) -> Result<()> {
@@ -30,7 +31,7 @@ pub fn run(cli: Cli) -> Result<()> {
         .unwrap_or_else(PathBuf::new);
 
     let capabilities = detect_capabilities(&cli);
-    let options = RenderOptions {
+    let mut options = RenderOptions {
         width: cli
             .width
             .unwrap_or_else(|| util::width::terminal_width().unwrap_or(80))
@@ -45,7 +46,11 @@ pub fn run(cli: Cli) -> Result<()> {
         ..RenderOptions::default()
     };
 
-    let output = render_markdown(&input, &options)?;
+    let blocks = markdown::parser::parse_markdown(&input);
+    if capabilities.kitty_graphics && !cli.no_remote_images {
+        options.media = remote::fetch_blocks(&blocks);
+    }
+    let output = render_parsed(&blocks, &options)?;
     print!("{}", output.text);
     Ok(())
 }
@@ -53,7 +58,7 @@ pub fn run(cli: Cli) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::render::Capabilities;
+    use crate::render::{Capabilities, render_markdown};
 
     #[test]
     fn renders_basic_text() {

@@ -16,6 +16,26 @@ fn png_bytes() -> Vec<u8> {
     bytes.into_inner()
 }
 
+fn cli_with_input(args: &[&str], input: &str) -> std::process::Output {
+    use std::io::Write as _;
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_mdlux"))
+        .args(["--images", "always", "--text-size", "never"])
+        .args(args)
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(input.as_bytes())
+        .unwrap();
+    child.wait_with_output().unwrap()
+}
+
 fn media_options() -> RenderOptions {
     RenderOptions {
         capabilities: Capabilities {
@@ -106,6 +126,51 @@ fn gif_bytes_emit_animation_frames_and_delays() {
     assert!(output.text.contains("r=1,z="));
     assert!(output.text.contains("s=3,v=1"));
     assert_eq!(output.media_slots.len(), 1);
+}
+
+#[test]
+fn cli_fetches_remote_images_by_default() {
+    use std::io::{Read as _, Write as _};
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let address = listener.local_addr().unwrap();
+    let image = png_bytes();
+    let server = std::thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = [0; 1024];
+        let read = stream.read(&mut request).unwrap();
+        assert!(String::from_utf8_lossy(&request[..read]).starts_with("GET /image.png "));
+        write!(
+            stream,
+            "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+            image.len()
+        )
+        .unwrap();
+        stream.write_all(&image).unwrap();
+    });
+
+    let output = cli_with_input(&[], &format!("![remote](http://{address}/image.png)"));
+    server.join().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("\u{1b}_G"));
+    assert!(!text.contains("[image: remote"));
+}
+
+#[test]
+fn cli_no_remote_images_prevents_downloads() {
+    let output = cli_with_input(
+        &["--no-remote-images"],
+        "![remote](https://example.invalid/remote.png)",
+    );
+    assert!(output.status.success());
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(text.contains("[image: remote"));
+    assert!(!text.contains("\u{1b}_G"));
 }
 
 #[test]

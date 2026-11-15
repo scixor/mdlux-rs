@@ -11,6 +11,7 @@ Some basic features:
 - Common inline/block HTML conversion (not full browser HTML/CSS)
 - GitHub-style callout labels (`[!NOTE]`, `[!TIP]`, and friends)
 - Kitty/table image rendering with media metadata
+- Remote HTTP(S) images in the CLI (disable with `--no-remote-images`)
 - Usable as a Rust, C, C++, or Zig library for TUIs and terminal tools
 - Some themes (built-ins can be cloned and restyled through the library)
 
@@ -84,6 +85,7 @@ mdlux --text-size never --images auto README.md
 --theme <ansi|dark|light|nord|gruvbox|kanagawa>  // I like nord/kanagawa a lot
 --text-size <auto|always|never>                  // resize text (basically kitty)
 --images <auto|always|never>                     // render out images if supportd
+--no-remote-images                                  // do not download HTTP(S) images
 --no-highlight
 --plain
 --list-themes
@@ -120,3 +122,4 @@ These Rust libraries do much of the heavy lifting:
 - [syntect](https://github.com/trishume/syntect) for syntax highlighting
 - [image](https://github.com/image-rs/image) for image and GIF decoding
 - [clap](https://github.com/clap-rs/clap) for the command-line interface
+- [ureq](https://github.com/algesten/ureq) for remote image downloads
