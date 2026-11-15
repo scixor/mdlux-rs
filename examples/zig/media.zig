@@ -2,6 +2,8 @@
 
 const std = @import("std");
 
+var stdout_buffer: [4096]u8 = undefined;
+
 pub fn main(init: std.process.Init) !void {
     const io = init.io;
     const gpa = init.gpa;
@@ -22,7 +24,7 @@ pub fn main(init: std.process.Init) !void {
 
     var first = std.mem.zeroes(mdlux.Output);
     const first_status = mdlux.renderMarkdown(source, &first_options);
-    if (first != mdlux.MDLUX_OK) return error.RenderFailed;
+    if (first_status != mdlux.MDLUX_OK) return error.RenderFailed;
     defer mdlux.outputFree(&first);
     std.debug.print("requests: {d}\n", .{first.request_count});
 
@@ -53,6 +55,8 @@ pub fn main(init: std.process.Init) !void {
     second_options.max_media_height_cells = 4;
 
     var second = std.mem.zeroes(mdlux.Output);
+    const second_status = mdlux_render(source, source.len, &second_options, @ptrCast(&media), media.len, &second);
+    if (second_status != mdlux.MDLUX_OK) return error.RenderFailed;
     var stdout_writer = std.Io.File.stdout().writer(io, &stdout_buffer);
     const stdout = &stdout_writer.interface;
     const bytes_ = second.bytes orelse return error.NoBytes;

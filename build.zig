@@ -4,14 +4,14 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const cargo_target = cargoTargetFromZig(target.result);
+    const cargo_target = cargoTargetFromZig(b, target.result);
     const archive = if (target.result.os.tag == .windows)
         b.fmt("target/{s}/release/mdlux.lib", .{cargo_target})
     else
         b.fmt("target/{s}/release/libmdlux.a", .{cargo_target});
 
     const cargo = b.addSystemCommand(&.{
-        "cargo", "build", "--locked", "--release",
+        "cargo",    "build",      "--locked", "--release",
         "--target", cargo_target,
     });
     cargo.setCwd(b.path("."));
@@ -50,13 +50,13 @@ pub fn build(b: *std.Build) void {
     const run_tests = b.addRunArtifact(tests);
     const test_step = b.step("test", "Run package tests");
     test_step.dependOn(&run_tests.step);
-    test_step.dependOn(cargo.step);
+    test_step.dependOn(&cargo.step);
 }
 
 fn linkSystemLibraries(module: *std.Build.Module, target: std.Target) void {
     switch (target.os.tag) {
         .linux => {
-            for (.{ "m", "pthread", "dl", "unwind" }) |name| {
+            for ([_][]const u8{ "m", "pthread", "dl", "unwind" }) |name| {
                 module.linkSystemLibrary(name, .{});
             }
         },
@@ -68,7 +68,7 @@ fn linkSystemLibraries(module: *std.Build.Module, target: std.Target) void {
     }
 }
 
-fn cargoTargetFromZig(target: std.Target) []const u8 {
+fn cargoTargetFromZig(b: *std.Build, target: std.Target) []const u8 {
     const arch = switch (target.cpu.arch) {
         .x86_64 => "x86_64",
         .aarch64 => "aarch64",
@@ -78,8 +78,8 @@ fn cargoTargetFromZig(target: std.Target) []const u8 {
     };
     switch (target.os.tag) {
         .linux => return switch (target.abi) {
-            .musl, .musleabi, .musleabihf => b.fmt("{s}-unknown-linux-musl", .{arch}),
-            .gnueabi, .gnueabihf, .none => b.fmt("{s}-unknown-linux-gnu", .{arch}),
+            .musl, .muslf32, .musln32 => b.fmt("{s}-unknown-linux-musl", .{arch}),
+            .gnu, .gnuf32, .gnun32, .gnusf, .gnux32, .none => b.fmt("{s}-unknown-linux-gnu", .{arch}),
             else => @panic("unsupported Linux ABI"),
         },
         .macos => return b.fmt("{s}-apple-darwin", .{arch}),

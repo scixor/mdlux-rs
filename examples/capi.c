@@ -40,13 +40,13 @@ int main(void) {
     mdlux_output output = {0};
     int status = mdlux_render((const uint8_t *)source, strlen(source), &options, NULL, 0, &output);
     if (status != MDLUX_OK) {
-        fprintf(stderr, "mdlux_render failed: 0\n", status);
+        fprintf(stderr, "mdlux_render failed: %d\n", status);
         return status;
     }
 
     /* `bytes` is UTF-8 text; print as one block. */
     fwrite(output.bytes, 1, output.bytes_len, stdout);
-    printf("\nrequests=0 slots=0 lines=0\n", output.request_count, output.slot_count, output.line_count);
+    printf("\nrequests=%zu slots=%zu lines=%zu\n", output.request_count, output.slot_count, (size_t)output.line_count);
     mdlux_output_free(&output);
     return 0;
 }

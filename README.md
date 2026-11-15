@@ -60,7 +60,12 @@ let output = mdlux::render::render_markdown(markdown, &options)?;
 println!("{}", output.text);
 ```
 
-If you need the same renderer from C, C++, or Zig, use the small C ABI instead. See the [C API guide](docs/c-api.md).
+Themes are values. Start from a built-in theme, clone it, alter any style, and pass it in
+`RenderOptions.theme`. `code_theme_name` is optional and chooses the syntax-highlighting palette
+separately from document furniture styles.
+
+If you need the same renderer from C, C++, or Zig, use the small C ABI instead. See the
+[C API guide](docs/c-api.md).
 
 ## Usage
 
@@ -203,19 +208,3 @@ echo "Done"
 
 ![Bonus - theme kanagawa](./img/kanagawa.png)
 
-## Library use and customization
-
-The Rust library exposes `render::render_markdown` through:
-```rust
-use mdlux::render::{Capabilities, RenderOptions, render_markdown};
-
-let options = RenderOptions { ... };
-let output = mdlux::render::render_markdown(markdown_or_html, &options)?;
-println!("{}", output.text);
-```
-
-Themes are values. Start from a built-in theme, clone it, alter any style, and pass it in
-`RenderOptions.theme`. `code_theme_name` is optional and chooses the syntax-highlighting palette
-separately from document furniture styles.
-
-For the C ABI and host-managed media, see the [C API guide](docs/c-api.md).

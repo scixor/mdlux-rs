@@ -5,8 +5,6 @@
 
 const std = @import("std");
 
-
-
 pub const Opaque = opaque {
     pub const _ = @This();
 };
