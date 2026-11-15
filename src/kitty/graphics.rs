@@ -16,7 +16,7 @@ pub struct KittyImageOptions {
     pub max_height_cells: Option<u16>,
 }
 
-fn transmit_png(out: &mut String, png: &[u8], first: &str, continuation: &str) {
+fn transmit_data(out: &mut String, png: &[u8], first: &str, continuation: &str) {
     let chunk_size = 3 * 1024;
     let n_chunks = png.len().div_ceil(chunk_size);
     for (i, start) in (0..png.len()).step_by(chunk_size).enumerate() {
@@ -114,9 +114,10 @@ fn render_png(
     let width_cells = opts.max_width_cells.max(1);
     let max_height = opts.max_height_cells.unwrap_or(0);
     let id = id.map(|id| format!(",i={id}")).unwrap_or_default();
-    let first = format!("a=T,t=d,f=100{id},s={width},v={height},c={width_cells},r={max_height}");
+    let first =
+        format!("a=T,t=d,f=100,q=1{id},s={width},v={height},c={width_cells},r={max_height}");
     let mut out = String::new();
-    transmit_png(&mut out, png, &first, "");
+    transmit_data(&mut out, png, &first, "");
     out
 }
 
@@ -167,27 +168,27 @@ pub fn render_gif_frames(
         // Overwriting only the changed rectangle avoids uploading identical pixels.
         let (x, y, w, h) =
             changed_rect(frames[index - 1].buffer(), current).unwrap_or((0, 0, 1, 1));
-        let png = if (x, y, w, h) == (0, 0, width, height) {
-            encode_rgba(current)?
+        let (data, format) = if (x, y, w, h) == (0, 0, width, height) {
+            (encode_rgba(current)?, 100)
         } else {
             let region =
                 image::RgbaImage::from_fn(w, h, |dx, dy| *current.get_pixel(x + dx, y + dy));
-            encode_rgba(&region)?
+            (region.into_raw(), 32)
         };
         let first = format!(
-            "a=f,t=d,f=100,i={id},x={x},y={y},s={w},v={h},c={index},X=1,z={}",
+            "a=f,t=d,f={format},q=1,i={id},x={x},y={y},s={w},v={h},c={index},X=1,z={}",
             frame_delay_ms(frame)
         );
-        let continuation = format!("a=f,i={id}");
-        transmit_png(&mut out, &png, &first, &continuation);
+        let continuation = format!("a=f,q=1,i={id}");
+        transmit_data(&mut out, &data, &first, &continuation);
     }
     write!(
         out,
-        "\u{1b}_Ga=a,i={id},r=1,z={}\u{1b}\\",
+        "\u{1b}_Ga=a,q=1,i={id},r=1,z={}\u{1b}\\",
         frame_delay_ms(first_frame)
     )
     .unwrap();
-    write!(out, "\u{1b}_Ga=a,i={id},s=3,v={loops}\u{1b}\\").unwrap();
+    write!(out, "\u{1b}_Ga=a,q=1,i={id},s=3,v={loops}\u{1b}\\").unwrap();
     Ok(out)
 }
 
@@ -220,9 +221,8 @@ mod tests {
             .nth(1)
             .unwrap()
             .trim_end_matches("\u{1b}\\");
-        let png = STANDARD.decode(payload).unwrap();
-        let decoded = image::load_from_memory(&png).unwrap().to_rgba8();
-        assert_eq!(decoded.dimensions(), (1, 1));
-        assert_eq!(decoded.get_pixel(0, 0), &image::Rgba([255, 0, 0, 255]));
+        assert!(frame.starts_with("a=f,t=d,f=32,q=1,"));
+        let rgba = STANDARD.decode(payload).unwrap();
+        assert_eq!(rgba, [255, 0, 0, 255]);
     }
 }
