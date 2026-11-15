@@ -37,6 +37,28 @@ jobs:
           cc -std=c11 -Wall -Wextra -Werror examples/capi.c -I include target/debug/libmdlux.a -lm -lpthread -ldl -o target/debug/mdlux-capi-smoke
           target/debug/mdlux-capi-smoke > /dev/null
 
+      - name: Setup Zig for musl cross compilation
+        uses: mlugg/setup-zig@v2.2.1
+        with:
+          version: 0.17.0
+
+      - name: Configure musl cross compiler
+        run: |
+          mkdir -p "$RUNNER_TEMP/musl-tools"
+          cat > "$RUNNER_TEMP/musl-tools/x86_64-linux-musl-gcc" <<'EOF'
+          #!/bin/bash
+          args=()
+          for arg in "$@"; do
+            [[ "$arg" == --target=* ]] || args+=("$arg")
+          done
+          exec zig cc -target x86_64-linux-musl "${args[@]}"
+          EOF
+          printf '#!/bin/sh\nexec zig ar "$@"\n' > "$RUNNER_TEMP/musl-tools/x86_64-linux-musl-ar"
+          chmod +x "$RUNNER_TEMP/musl-tools/"*
+          echo "$RUNNER_TEMP/musl-tools" >> "$GITHUB_PATH"
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=$RUNNER_TEMP/musl-tools/x86_64-linux-musl-gcc" >> "$GITHUB_ENV"
+          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_RUSTFLAGS=-C link-self-contained=no" >> "$GITHUB_ENV"
+
       - name: Build static Linux artifact
         run: cargo build --release --locked --target x86_64-unknown-linux-musl
 
