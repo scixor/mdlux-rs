@@ -198,12 +198,14 @@ fn embedded_table_images_are_not_emitted_in_fallback() {
 
 #[test]
 fn inline_display_mode_renders_bracketed_alt() {
-    let mut options = RenderOptions::default();
-    options.media = vec![MediaResolution {
-        source: "emoji:sadkermit".to_string(),
-        display_mode: mdlux::render::MediaDisplayMode::Inline,
-        ..MediaResolution::default()
-    }];
+    let options = RenderOptions {
+        media: vec![MediaResolution {
+            source: "emoji:sadkermit".to_string(),
+            display_mode: mdlux::render::MediaDisplayMode::Inline,
+            ..MediaResolution::default()
+        }],
+        ..Default::default()
+    };
     let output = render_markdown("![sadkermit](emoji:sadkermit)", &options).unwrap();
     assert_eq!(output.text.trim(), "[sadkermit]");
 }

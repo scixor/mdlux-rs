@@ -477,7 +477,8 @@ fn render_image_block(
     out: &mut String,
 ) -> Result<()> {
     let resolution = find_resolution(ctx.media, path);
-    if resolution.is_some_and(|r| r.display_mode == crate::render::media::MediaDisplayMode::Inline) {
+    if resolution.is_some_and(|r| r.display_mode == crate::render::media::MediaDisplayMode::Inline)
+    {
         out.push_str(&format!("[{alt}]"));
         return Ok(());
     }
